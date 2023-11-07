@@ -13,11 +13,16 @@
 - `Any` type will not be supported
 
 * Supported primitive types
+- bool -> bool
+- uint64 -> u64
+- uint32 -> u32
+- int64 -> i64
 - int32 -> i32
 - string -> String or ArrayString (when max-size is set)
 - bytes -> [u8], or [u8:size]
 - repeated <type | message> -> [<type | message>]
-- enums -> enum <name> { Value1, Value2, ... }
+- optional <type> -> Option< <type> >
+- enums -> enum <name> { Value1, Value2, ... } (with from and to ordinals)
 
 * oneof
 - This will be validated

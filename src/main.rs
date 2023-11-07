@@ -41,6 +41,11 @@ fn main() {
     dbg!(PicoPBParser::parse(Rule::proto_definition, example_proto,).unwrap());
 
     let example_proto2 = "
+     message Responses {
+         required string name = 1;
+         required bool ok = 2;
+         optional Error error = 2;
+     }
 enum Error {
     ERROR_INVALID_PASSWORD = 1;
     ERROR_INVALID_USER = 2;

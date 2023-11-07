@@ -8,11 +8,17 @@ whitespace_opt = _{ whitespace_char* }
 
 terminator = _{ whitespace_opt ~ ";" ~ whitespace_opt}
 
-proto_definition = { SOI ~ (version_decl | definition) ~ definition* ~ EOI }
+proto_definition = { SOI ~ whitespace_opt? ~ (version_decl)? ~ statement* ~ EOI }
 version_decl = { "syntax" ~ "=" ~ string ~ terminator }
-escape = { "\\" ~ "\""}
+
+
+statement = { block_statement | import_statement }
+block_statement = { message_definition | enum_definition }
+import_statement = { "import" ~ string ~ terminator }
+
 
 raw_string = @{ (!("\\" | "\"") ~ ANY)+ }
+escape = { "\\" ~ "\""}
 string = @{ "\"" ~ (raw_string | escape)* ~ "\"" }
 
 number = @{ '1'..'9' ~ ASCII_DIGIT* }
@@ -25,7 +31,7 @@ block_end = { "}" ~ whitespace_opt}
 message_definition = {
     "message" ~ identifier ~ block_begin ~ message_field* ~ block_end
 }
-field_type = { "int32" | "string" | "bytes" | identifier }
+field_type = { "bool" | "uint64" | "int64" | "uint32" | "int32" | "string" | "bytes" | identifier }
 message_field = { qualifier ~ field_type ~ identifier ~ "=" ~ number ~ terminator }
 qualifier = { "required" | "optional" | "repeated" }
 
@@ -34,4 +40,3 @@ enum_definition = {
 }
 enum_field = { whitespace_opt ~ identifier ~ "=" ~ number ~ terminator }
 
-definition = { whitespace_opt ~ (message_definition | enum_definition) }

@@ -1,0 +1,31 @@
+* PicoPB - Protobuf in embedded Rust
+
+* Goals
+- Small: library < 1500 LOC
+- Generated code: minimal
+- No memory allocation
+- Be compatible with NanoPB
+- proto v2 is first priority
+- Supports NanoPB max_size option
+- Stream based -> because this is easy in rust
+
+* Non-features
+- `Any` type will not be supported
+
+* Supported primitive types
+- int32 -> i32
+- string -> String or ArrayString (when max-size is set)
+- bytes -> [u8], or [u8:size]
+- repeated <type | message> -> [<type | message>]
+- enums -> enum <name> { Value1, Value2, ... }
+
+* oneof
+- This will be validated
+
+* Encoding
+
+* Decoding
+
+* How
+- Use macros to define the structs
+  `picopb_struct!(SOMETHING HERE)`

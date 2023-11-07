@@ -1,0 +1,37 @@
+WHITESPACE = _{ " " | LINE_SEPARATOR }
+line_comment = ${ "//" ~ (!LINE_SEPARATOR ~ ANY)* }
+multiline_comment = @{ ("/*" ~ (!"*/" ~ ANY)* ~ "*/") }
+COMMENT = @{ multiline_comment | line_comment }
+
+whitespace_char = _{ "\n" | " " }
+whitespace_opt = _{ whitespace_char* }
+
+terminator = _{ whitespace_opt ~ ";" ~ whitespace_opt}
+
+proto_definition = { SOI ~ (version_decl | definition) ~ definition* ~ EOI }
+version_decl = { "syntax" ~ "=" ~ string ~ terminator }
+escape = { "\\" ~ "\""}
+
+raw_string = @{ (!("\\" | "\"") ~ ANY)+ }
+string = @{ "\"" ~ (raw_string | escape)* ~ "\"" }
+
+number = @{ '1'..'9' ~ ASCII_DIGIT* }
+identifier_start = {ASCII_ALPHA | "_" }
+identifier = @{ identifier_start ~ (identifier_start | ASCII_DIGIT)* }
+
+block_begin = { "{" ~ whitespace_opt }
+block_end = { "}" ~ whitespace_opt}
+
+message_definition = {
+    "message" ~ identifier ~ block_begin ~ message_field* ~ block_end
+}
+field_type = { "int32" | "string" | "bytes" | identifier }
+message_field = { qualifier ~ field_type ~ identifier ~ "=" ~ number ~ terminator }
+qualifier = { "required" | "optional" | "repeated" }
+
+enum_definition = {
+    "enum" ~ identifier ~ block_begin ~ enum_field* ~ block_end
+}
+enum_field = { whitespace_opt ~ identifier ~ "=" ~ number ~ terminator }
+
+definition = { whitespace_opt ~ (message_definition | enum_definition) }

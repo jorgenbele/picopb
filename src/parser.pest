@@ -25,8 +25,8 @@ number = @{ '1'..'9' ~ ASCII_DIGIT* }
 identifier_start = {ASCII_ALPHA | "_" }
 identifier = @{ identifier_start ~ (identifier_start | ASCII_DIGIT)* }
 
-block_begin = { "{" ~ whitespace_opt }
-block_end = { "}" ~ whitespace_opt}
+block_begin = _{ "{" ~ whitespace_opt }
+block_end = _{ "}" ~ whitespace_opt}
 
 message_definition = {
     "message" ~ identifier ~ block_begin ~ message_field* ~ block_end

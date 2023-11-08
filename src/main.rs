@@ -1,5 +1,5 @@
 use pest::Parser;
-use picopb::parser::{PicoPBParser, Rule, parse};
+use picopb::{parser::{PicoPBParser, Rule, parse}, validator::validate};
 
 const PROTO_DEF: &str = "syntax = \"proto2\"; \
                          message A{int32 int_field = 1;}";
@@ -64,7 +64,8 @@ fn main() {
             ERROR_NOT_FOUND = 2;
         }
     ");
-    dbg!(result);
+    dbg!(&result);
+    validate(result.unwrap()).unwrap();
 }
 
 #[cfg(test)]

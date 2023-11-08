@@ -87,6 +87,8 @@ impl FieldType {
             ("int64", _) => Self::Int64,
             ("uint32", _) => Self::Uint32,
             ("uint64", _) => Self::Uint64,
+            // if we don't recognize the type we assume it is a Message type
+            // this will be verified later
             (s, Some(limit)) =>  Self::MessageType(s.to_string(), limit),
             (s, None) =>  Self::UnboundedMessageType(s.to_string()),
         }
@@ -98,10 +100,10 @@ pub type Ordinal = i32;
 
 #[derive(Debug)]
 pub struct MessageField {
-    qualifier: FieldQualifier,
-    field_type: FieldType,
-    identifier: Identifier,
-    ordinal: Ordinal,
+    pub qualifier: FieldQualifier,
+    pub field_type: FieldType,
+    pub identifier: Identifier,
+    pub ordinal: Ordinal,
 }
 
 #[derive(Debug)]
@@ -234,6 +236,8 @@ impl ProtoParser {
                 return Err(ParserError::ImportMustBeNonEmpty);
             }
             self.imports.push(slice[1..slice.len()-1].to_owned())
+
+            // TODO: open files, and parse them here
         }
         Ok(())
     }
@@ -241,7 +245,7 @@ impl ProtoParser {
     fn parse_version_decl(&mut self, statement: PestPair<'_, Rule>) -> EmptyParseResult {
         if let Some(value) = statement.into_inner().nth(0) {
             // TODO: 
-            if value.as_span().as_str() == "\"proto2\"" {
+            if Self::string_from_span(value.as_span()) == "proto2" {
                 self.version = Version::Proto2;
                 return Ok(())
             } else {

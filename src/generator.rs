@@ -1,15 +1,9 @@
 /// This module contains the code generator
 /// It takes the parsed result and creates rust code from the input
 use convert_case::{Case, Casing};
-use crate::parser::{
-    EnumType, FieldQualifier, FieldType, MessageType, ParserError, ProtoParser, Version,
-};
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error, ops::ControlFlow,
-};
-
-use std::iter::zip;
+use crate::parser::ProtoParser;
+use crate::common::{FieldQualifier, EnumType, MessageType, FieldType};
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum GeneratorError {

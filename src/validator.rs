@@ -1,10 +1,10 @@
-use pest::Parser;
-
 /// This module contains a basic validator for the protobuf definition
 /// It will check that all types are valid (either defined or builtin)
 
-use crate::parser::{ProtoParser, Version, EnumType, MessageType, FieldType, ParserError};
-use std::{error::Error, collections::HashSet};
+use crate::parser::{ProtoParser, ParserError};
+use crate::common::{Version, FieldType};
+
+use std::{collections::HashSet};
 
 #[derive(Debug)]
 pub enum ValidatorError {

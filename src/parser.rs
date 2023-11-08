@@ -1,7 +1,8 @@
-use std::{collections::{BTreeMap, HashMap}, hash::Hash};
+use std::{collections::{BTreeMap, HashMap}, hash::Hash, string::ParseError, option};
 use std::num::ParseIntError;
 
-use pest::{Parser, error::Error as PestError, iterators::Pair as PestPair, state, Span};
+use arraystring::typenum::Max;
+use pest::{Parser, error::Error as PestError, iterators::Pair as PestPair, iterators::Pairs as PestPairs, state, Span};
 /// This file contains the proto definition parser for proto v2
 /// It is implemented using pest
 use pest_derive::Parser;
@@ -18,6 +19,9 @@ pub enum ParserError {
     InvalidProtoVersion,
     DuplicateProtoVersion,
     ImportMustBeNonEmpty,
+    ExpectedOption,
+    ExpectedOptionValue,
+    UnknownOption(String),
     PestRuleError(PestError<Rule>),
     ParseIntError(ParseIntError),
     ExpectedButGot(String, String),
@@ -131,10 +135,46 @@ pub struct ProtoParser {
 type ParseResult = Result<ProtoParser, ParserError>;
 type EmptyParseResult = Result<(), ParserError>;
 
+#[derive(Debug)]
+struct MaxOption {
+    max_size: Option<usize>,
+    max_len: Option<usize>,
+}
+
 impl ProtoParser {
 
+    fn usize_from_str(s: &str) -> Result<usize, ParserError> {
+        str::parse::<usize>(s).map_err(|err| ParserError::ParseIntError(err))
+    }
+
+    fn parse_options(&mut self, options_statement: PestPairs<'_, Rule>) -> Result<MaxOption, ParserError> {
+        let mut out = MaxOption { max_len: None, max_size: None};
+
+        for option in options_statement.into_iter() {
+            match option.as_rule() {
+                Rule::option => {
+                    let mut inner = option.into_inner();
+                    let option = inner.next().ok_or(ParserError::ExpectedOption)?;
+                    let value = inner.next().ok_or(ParserError::ExpectedOptionValue)?;
+
+                    match option.as_str() {
+                        "max_size" => {
+                            out.max_size = Some(Self::usize_from_str(value.as_str())?);
+                        },
+                        "max_len" => {
+                            out.max_len = Some(Self::usize_from_str(value.as_str())?);
+                        },
+                        s => return Err(ParserError::UnknownOption(s.to_string())),
+                    }
+                },
+                _ => unreachable!() 
+            }
+        }
+        Ok(out) 
+       }
+
     fn parse_message_definition(&mut self, message_statement: PestPair<'_, Rule>) -> EmptyParseResult {
-        dbg!(&message_statement);
+        // dbg!(&message_statement);
 
         let mut inner = message_statement.into_inner();
 
@@ -155,15 +195,29 @@ impl ProtoParser {
 
                     // TODO:
                     // optional options that can contain the max_size
-                    let max_size = None;
+                    let mut options : MaxOption = MaxOption { max_size: None, max_len: None };
+
+
+                    if let Some(next) = message_inner.next() {
+                        dbg!(&next);
+                        match next.as_rule() {
+                            Rule::options => {
+                                if let Ok(opts)  = self.parse_options(next.into_inner()) {
+                                    options = opts;
+                                    println!("Updated OPTIONS");
+                                }
+                            },
+                            _ => unreachable!()
+                        }
+                    }
 
                     let field_identifier = Self::identifier_from_span(identifier.as_span());
                     let field_ordinal = Self::ordinal_from_span(field_number.as_span())?;
 
 
                     let value = MessageField {
-                        qualifier: FieldQualifier::from_str(qualifier, max_size),
-                        field_type: FieldType::from_str(field_type, max_size),
+                        qualifier: FieldQualifier::from_str(qualifier, options.max_size),
+                        field_type: FieldType::from_str(field_type, options.max_size),
                         identifier: field_identifier,
                         ordinal: field_ordinal
                     };
@@ -222,7 +276,7 @@ impl ProtoParser {
 
     fn parse_block_statement(&mut self, statement: PestPair<'_, Rule>) -> EmptyParseResult {
         println!("Parsing block");
-        dbg!(&statement);
+        // dbg!(&statement);
         match statement.as_rule() {
             Rule::message_definition => self.parse_message_definition(statement),
             Rule::enum_definition => self.parse_enum_definition(statement),
@@ -275,6 +329,7 @@ impl ProtoParser {
 
 pub fn parse(input: &str) -> ParseResult {
     let parse = PicoPBParser::parse(Rule::proto_definition, input)?;
+    dbg!(&parse);
 
     let mut output = ProtoParser { 
         version: Version::Unknown,

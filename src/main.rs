@@ -49,12 +49,12 @@ fn main() {
         import \"shared.proto\";
 
         message Query {
-            required bytes key = 1;
-            required bytes opaque = 2;
+            required bytes key = 1; [(nanopb).max_size=64]
+            required bytes opaque = 2; [(nanopb).max_size=64]
         }
 
         message Response {
-            required bytes value = 1;
+            required bytes value = 1; [(nanopb).max_size=64]
             required bytes opaque = 2;
             optional Error error = 3;
         }
@@ -64,7 +64,7 @@ fn main() {
             ERROR_NOT_FOUND = 2;
         }
     ");
-    dbg!(&result);
+    // dbg!(&result);
     let result = result.unwrap();
     validate(&result).unwrap();
     generate(&result).unwrap();

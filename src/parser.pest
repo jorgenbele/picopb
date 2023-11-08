@@ -32,8 +32,13 @@ message_definition = {
     "message" ~ identifier ~ block_begin ~ message_field* ~ block_end
 }
 field_type = { "bool" | "uint64" | "int64" | "uint32" | "int32" | "string" | "bytes" | identifier }
-message_field = { qualifier ~ field_type ~ identifier ~ "=" ~ number ~ terminator }
+message_field = { qualifier ~ field_type ~ identifier ~ "=" ~ number ~ terminator ~ options? }
 qualifier = { "required" | "optional" | "repeated" }
+
+max_size_option = { "max_size" }
+max_len_option = { "max_len" }
+option = { "(" ~ "nanopb" ~ ")" ~ "." ~ (max_size_option | max_len_option) ~ "=" ~ number }
+options = { "[" ~ option ~ ("," ~ option)*  ~ "]" ~ whitespace_opt }
 
 enum_definition = {
     "enum" ~ identifier ~ block_begin ~ enum_field* ~ block_end

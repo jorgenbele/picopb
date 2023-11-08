@@ -1,7 +1,18 @@
 use std::{collections::{BTreeMap, HashMap}, hash::Hash, string::ParseError, option};
 
-
 #[derive(Debug)]
+pub struct WireType {
+    pub id: usize,
+    pub name: &'static str,
+}
+
+static VARINT_WIRETYPE: WireType = WireType { id: 0, name: "VARINT" };
+static I64_WIRETYPE: WireType = WireType { id: 1, name: "I64" };
+static LEN_WIRETYPE: WireType = WireType { id: 2, name: "LEN" };
+// SGROUP and EGROUP are deprecated
+static I32_WIRETYPE: WireType = WireType { id: 5, name: "I32" };
+
+#[derive(Debug, Clone)]
 pub enum FieldType {
     UnboundedString,
     UnboundedBytes,
@@ -12,11 +23,21 @@ pub enum FieldType {
     Int64,
     Uint32,
     Uint64,
+    EnumType(String),
     MessageType(String, usize),
     UnboundedMessageType(String),
 }
 
 impl FieldType {
+    pub fn wiretype(self) -> &'static WireType {
+        match self {
+            Self::Bool | Self::Int32 | Self::Int64 | Self::Uint32 | Self::Uint64 | Self::EnumType(_) => &VARINT_WIRETYPE,
+            Self::Bytes(_) | Self::String(_) => &LEN_WIRETYPE,
+            Self::UnboundedString | Self::UnboundedBytes => &LEN_WIRETYPE,
+            Self::UnboundedMessageType(_) | Self::MessageType(_, _) => &LEN_WIRETYPE,
+        }
+    }
+
     pub fn from_str(s: &str, max_size: Option<usize>) -> Self {
         match (s, max_size) {
             ("string", None) => Self::UnboundedString,
@@ -39,7 +60,7 @@ impl FieldType {
 pub type Identifier = String;
 pub type Ordinal = i32;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FieldQualifier {
     Optional,
     Required,
@@ -60,7 +81,7 @@ impl FieldQualifier {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MessageField {
     pub qualifier: FieldQualifier,
     pub field_type: FieldType,
@@ -68,7 +89,7 @@ pub struct MessageField {
     pub ordinal: Ordinal,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MessageType {
     pub identifier: String,
     pub fields: BTreeMap<Ordinal, MessageField>,
@@ -84,9 +105,4 @@ pub struct EnumType {
 pub enum Version {
     Proto2,
     Unknown,
-}
-
-pub struct WireType {
-    pub id: usize,
-    pub name: &'static str,
 }

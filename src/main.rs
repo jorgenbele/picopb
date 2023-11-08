@@ -68,8 +68,8 @@ fn main() {
             ERROR_NOT_FOUND = 2;
         }
     ");
-    // dbg!(&result);
     let result = result.unwrap();
+    dbg!(&result);
     validate(&result).unwrap();
     generate(&result).unwrap();
 }

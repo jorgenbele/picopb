@@ -28,6 +28,7 @@ fn field_to_rust_type(qualifier: &FieldQualifier, field_type: &FieldType) -> Str
             FieldType::Uint32 => "u32".to_owned(),
             FieldType::MessageType(s, _) => format!("{s}"),
             FieldType::UnboundedMessageType(s) => format!("{s}"),
+            FieldType::EnumType(s) => format!("{s}"),
         },
         (FieldQualifier::Optional, field_type) => match field_type {
             FieldType::Bool => "Option<bool>".to_owned(),
@@ -41,6 +42,7 @@ fn field_to_rust_type(qualifier: &FieldQualifier, field_type: &FieldType) -> Str
             FieldType::Uint32 => "Option<u32>".to_owned(),
             FieldType::MessageType(s, _) => format!("Option<{s}>"),
             FieldType::UnboundedMessageType(s) => format!("Option<{s}>"),
+            FieldType::EnumType(s) => format!("Option<{s}>"),
         },
         (FieldQualifier::RepeatedUnbounded, field_type) => {
             format!(

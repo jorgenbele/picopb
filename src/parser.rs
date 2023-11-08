@@ -257,6 +257,7 @@ pub fn parse(input: &str) -> ParseResult {
         message_types: HashMap::new()
     };
 
+    // Do a single pass and extract enum and message types
     for pair in parse.into_iter() {
         match pair.as_rule() {
             Rule::proto_definition => {
@@ -272,5 +273,32 @@ pub fn parse(input: &str) -> ParseResult {
             _ => unreachable!()
         }
     }
+
+    // Now we know which types are primitives, sub-messages, and Enums
+    // Iterate through all fields in all message types and fix up those that we now know are 
+    // enums
+    // TODO: fixup this ugly mess
+    let mut new_message_types: HashMap<String, MessageType> = HashMap::new();
+    for (identifier, message_type) in output.message_types.into_iter() {
+        let mut new_fields = message_type.fields.clone();
+        let mut new_message_type = message_type.clone();
+
+        for (ordinal, field) in message_type.fields {
+            match &field.field_type {
+                FieldType::MessageType(identifier, _) | FieldType::UnboundedMessageType(identifier) => {
+                    if output.enum_types.contains_key(identifier) {
+                        // this field has a type that we now know is a Enum (not a Message)
+                        let mut new_field = field.clone();
+                        new_field.field_type = FieldType::EnumType(identifier.clone());
+                        new_fields.insert(ordinal, new_field);
+                    }
+                }
+                _ => continue,
+            }
+        }
+        new_message_type.fields = new_fields;
+        new_message_types.insert(identifier.clone(), new_message_type);
+    }
+    output.message_types = new_message_types;
     Ok(output)
 }

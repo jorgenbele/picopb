@@ -1,5 +1,5 @@
 use pest::Parser;
-use picopb::{parser::{PicoPBParser, Rule, parse}, validator::validate};
+use picopb::{parser::{PicoPBParser, Rule, parse}, validator::validate, generator::generate};
 
 const PROTO_DEF: &str = "syntax = \"proto2\"; \
                          message A{int32 int_field = 1;}";
@@ -53,7 +53,7 @@ fn main() {
             required bytes opaque = 2;
         }
 
-        message Resonse {
+        message Response {
             required bytes value = 1;
             required bytes opaque = 2;
             optional Error error = 3;
@@ -65,7 +65,9 @@ fn main() {
         }
     ");
     dbg!(&result);
-    validate(result.unwrap()).unwrap();
+    let result = result.unwrap();
+    validate(&result).unwrap();
+    generate(&result).unwrap();
 }
 
 #[cfg(test)]

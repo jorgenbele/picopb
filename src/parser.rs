@@ -46,16 +46,18 @@ pub struct EnumType {
 pub enum FieldQualifier {
     Optional,
     Required,
-    Repeated
+    RepeatedUnbounded,
+    Repeated(usize)
 }
 
-impl From<&str> for FieldQualifier {
-    fn from(s: &str) -> Self {
-        match s {
-            "optional" => FieldQualifier::Optional,
-            "required" => FieldQualifier::Required,
-            "repeated" => FieldQualifier::Repeated,
-            _ => unreachable!(),
+impl FieldQualifier {
+    pub fn from_str(s: &str, max_size: Option<usize>) -> Self {
+        match (s, max_size) {
+            ("optional", _) => Self::Optional,
+            ("required", _) => Self::Required,
+            ("repeated", Some(limit)) => Self::Repeated(limit),
+            ("repeated", None) => Self::RepeatedUnbounded,
+            _ => unreachable!()
         }
     }
 }
@@ -160,7 +162,7 @@ impl ProtoParser {
 
 
                     let value = MessageField {
-                        qualifier: FieldQualifier::from(qualifier),
+                        qualifier: FieldQualifier::from_str(qualifier, max_size),
                         field_type: FieldType::from_str(field_type, max_size),
                         identifier: field_identifier,
                         ordinal: field_ordinal

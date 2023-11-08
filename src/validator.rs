@@ -13,7 +13,7 @@ pub enum ValidatorError {
 }
 
 
-pub fn validate(parser: ProtoParser) -> Result<(), ValidatorError> {
+pub fn validate(parser: &ProtoParser) -> Result<(), ValidatorError> {
     if let Version::Unknown = parser.version {
         return Err(ValidatorError::InvalidProtoVersion);
     }

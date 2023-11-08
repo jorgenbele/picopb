@@ -49,7 +49,7 @@ fn main() {
         import \"shared.proto\";
 
         message Query {
-            required bytes key = 1; [(nanopb).max_size=64]
+            required bytes key = 1; [(nanopb).max_size=128]
             required bytes opaque = 2; [(nanopb).max_size=64]
         }
 
@@ -57,6 +57,10 @@ fn main() {
             required bytes value = 1; [(nanopb).max_size=64]
             required bytes opaque = 2;
             optional Error error = 3;
+        }
+
+        message RepeatedResponse {
+            repeated Response responses = 1; [(nanopb).max_size=64]
         }
 
         enum Error {

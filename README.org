@@ -34,3 +34,56 @@
 * How
 - Use macros to define the structs
   `picopb_struct!(SOMETHING HERE)`
+
+* Example
+#+BEGIN_SRC
+message Query {
+    required bytes key = 1; [(nanopb).max_size=128]
+    required bytes opaque = 2; [(nanopb).max_size=64]
+}
+
+message Response {
+    required bytes value = 1; [(nanopb).max_size=64]
+    required bytes opaque = 2;
+    optional Error error = 3;
+}
+
+message RepeatedResponse {
+    repeated Response responses = 1; [(nanopb).max_size=64]
+}
+
+enum Error {
+    ERROR_INVALID_KEY = 1;
+    ERROR_NOT_FOUND = 2;
+}
+#+END_SRC
+
+Compiles to:
+#+BEGIN_SRC
+pub enum Error {
+    ErrorInvalidKey,
+    ErrorNotFound,
+}
+impl TryFrom<usize> for Error {
+    type Error = String;
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Error::ErrorInvalidKey),
+            2 => Ok(Error::ErrorNotFound),
+            _ => Err(format!("invalid ordinal value: {} for enum Error", value)),
+        }
+    }
+}
+pub struct Query {
+    pub key: [u8; 128],
+    pub opaque: [u8; 64],
+}
+pub struct RepeatedResponse {
+    pub responses: [Response; 64],
+}
+pub struct Response {
+    pub value: [u8; 64],
+    pub opaque: bytes::Bytes,
+    pub error: Option<Error>,
+}
+#+END_SRC

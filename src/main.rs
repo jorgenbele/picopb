@@ -1,49 +1,54 @@
 use pest::Parser;
-use picopb::{parser::{PicoPBParser, Rule, parse}, validator::validate, generator::generate};
+use picopb::{
+    generator::generate,
+    parser::{parse, PicoPBParser, Rule},
+    validator::validate,
+};
 
 const PROTO_DEF: &str = "syntax = \"proto2\"; \
                          message A{int32 int_field = 1;}";
 
 fn main() {
-    let example_field = "required string name = 2;";
-    PicoPBParser::parse(Rule::message_field, example_field).unwrap();
+    // let example_field = "required string name = 2;";
+    // PicoPBParser::parse(Rule::message_field, example_field).unwrap();
 
-    let message = "message A { required string name = 2; }";
-    PicoPBParser::parse(Rule::message_definition, message).unwrap();
+    // let message = "message A { required string name = 2; }";
+    // PicoPBParser::parse(Rule::message_definition, message).unwrap();
 
-    let message_several = "message A {
-    required string name = 2;
-    optional string name = 2;
-}";
-    PicoPBParser::parse(Rule::message_definition, message_several).unwrap();
+    // let message_several = "message A {
+    // required string name = 2;
+    // optional string name = 2;
+    // }";
+    // PicoPBParser::parse(Rule::message_definition, message_several).unwrap();
 
-    //
-    let example_proto = "syntax = \"proto2\";
-     message A {
-         required string name = 1;
-         optional string password = 123;
-         repeated int32 integers = 2;
-     }";
-    println!("{}", example_proto);
-    PicoPBParser::parse(Rule::proto_definition, example_proto,).unwrap();
+    // //
+    // let example_proto = "syntax = \"proto2\";
+    //  message A {
+    //      required string name = 1;
+    //      optional string password = 123;
+    //      repeated int32 integers = 2;
+    //  }";
+    // println!("{}", example_proto);
+    // PicoPBParser::parse(Rule::proto_definition, example_proto).unwrap();
 
-    let example_proto2 = "
-    syntax = \"proto2\";
-    import \"common.proto\";
-     message Responses {
-         required string name = 1;
-         required bool ok = 2;
-         optional Error error = 2;
-     }
-     enum Error {
-         ERROR_INVALID_PASSWORD = 1;
-         ERROR_INVALID_USER = 2;
-    }";
+    // let example_proto2 = "
+    // syntax = \"proto2\";
+    // import \"common.proto\";
+    //  message Responses {
+    //      required string name = 1;
+    //      required bool ok = 2;
+    //      optional Error error = 2;
+    //  }
+    //  enum Error {
+    //      ERROR_INVALID_PASSWORD = 1;
+    //      ERROR_INVALID_USER = 2;
+    // }";
 
-    println!("{}", example_proto2);
-    PicoPBParser::parse(Rule::proto_definition, example_proto2,).unwrap();
+    // println!("{}", example_proto2);
+    // PicoPBParser::parse(Rule::proto_definition, example_proto2).unwrap();
 
-    let result = parse("
+    let result = parse(
+        "
         syntax = \"proto2\";
         import \"common.proto\";
         import \"shared.proto\";
@@ -60,14 +65,15 @@ fn main() {
         }
 
         message RepeatedResponse {
-            repeated Response responses = 1; [(nanopb).max_size=64]
+            repeated Response responses = 1; [packed=true,(nanopb).max_size=64]
         }
 
         enum Error {
             ERROR_INVALID_KEY = 1;
             ERROR_NOT_FOUND = 2;
         }
-    ");
+    ",
+    );
     let result = result.unwrap();
     dbg!(&result);
     validate(&result).unwrap();

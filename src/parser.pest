@@ -21,6 +21,8 @@ raw_string = @{ (!("\\" | "\"") ~ ANY)+ }
 escape = { "\\" ~ "\""}
 string = @{ "\"" ~ (raw_string | escape)* ~ "\"" }
 
+bool = { "true" | "false" }
+
 number = @{ '1'..'9' ~ ASCII_DIGIT* }
 identifier_start = {ASCII_ALPHA | "_" }
 identifier = @{ identifier_start ~ (identifier_start | ASCII_DIGIT)* }
@@ -37,7 +39,9 @@ qualifier = { "required" | "optional" | "repeated" }
 
 max_size_option = { "max_size" }
 max_len_option = { "max_len" }
-option = { "(" ~ "nanopb" ~ ")" ~ "." ~ (max_size_option | max_len_option) ~ "=" ~ number }
+nanopb_option = { "(" ~ "nanopb" ~ ")" ~ "." ~ (max_size_option | max_len_option) ~ "=" ~ number }
+packed_option = { "packed" ~ "=" ~ bool }
+option = { nanopb_option | packed_option }
 options = { "[" ~ option ~ ("," ~ option)*  ~ "]" ~ whitespace_opt }
 
 enum_definition = {

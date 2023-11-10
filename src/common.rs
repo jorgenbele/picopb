@@ -1,16 +1,7 @@
-use std::{collections::{BTreeMap, HashMap}, hash::Hash, string::ParseError, option};
+use std::collections::BTreeMap;
 
-#[derive(Debug)]
-pub struct WireType {
-    pub id: usize,
-    pub name: &'static str,
-}
+use crate::wiretypes::WireType;
 
-static VARINT_WIRETYPE: WireType = WireType { id: 0, name: "VARINT" };
-static I64_WIRETYPE: WireType = WireType { id: 1, name: "I64" };
-static LEN_WIRETYPE: WireType = WireType { id: 2, name: "LEN" };
-// SGROUP and EGROUP are deprecated
-static I32_WIRETYPE: WireType = WireType { id: 5, name: "I32" };
 
 #[derive(Debug, Clone)]
 pub enum FieldType {
@@ -29,15 +20,6 @@ pub enum FieldType {
 }
 
 impl FieldType {
-    pub fn wiretype(self) -> &'static WireType {
-        match self {
-            Self::Bool | Self::Int32 | Self::Int64 | Self::Uint32 | Self::Uint64 | Self::EnumType(_) => &VARINT_WIRETYPE,
-            Self::Bytes(_) | Self::String(_) => &LEN_WIRETYPE,
-            Self::UnboundedString | Self::UnboundedBytes => &LEN_WIRETYPE,
-            Self::UnboundedMessageType(_) | Self::MessageType(_, _) => &LEN_WIRETYPE,
-        }
-    }
-
     pub fn from_str(s: &str, max_size: Option<usize>) -> Self {
         match (s, max_size) {
             ("string", None) => Self::UnboundedString,

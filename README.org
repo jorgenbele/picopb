@@ -1,5 +1,8 @@
 * PicoPB - Protobuf in embedded Rust
 
+* TODO:
+- packed fields support in parser and encoder
+
 * Goals
 - Small: library < 1500 LOC
 - Generated code: minimal

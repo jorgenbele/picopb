@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::wiretypes::{Field, WireTyped, ToVarint};
+use crate::wiretypes::{Field, ToVarint, WireTyped};
 
 use leb128;
 
@@ -8,7 +8,6 @@ use leb128;
 pub enum EncodeError {
     BufferOutOfSpace,
 }
-
 
 pub type Result<T> = std::result::Result<T, EncodeError>;
 
@@ -19,12 +18,14 @@ pub struct EncodeBuffer<'a> {
 }
 
 impl Write for EncodeBuffer<'_> {
-    /// write appends append_bytes to the encode buffer and returns the number of bytes written
     fn write(&mut self, append_bytes: &[u8]) -> std::io::Result<usize> {
         let count = append_bytes.len();
         let new_len = self.len + count;
         if new_len >= self.buffer.len() {
-            return Err(std::io::Error::new(std::io::ErrorKind::OutOfMemory, "out of memory"));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::OutOfMemory,
+                "out of memory",
+            ));
         }
         self.buffer[self.len..new_len].copy_from_slice(append_bytes);
         self.len = new_len;
@@ -38,7 +39,7 @@ impl Write for EncodeBuffer<'_> {
 
 impl EncodeBuffer<'_> {
     pub fn from_static<'a>(static_buffer: &'a mut [u8]) -> EncodeBuffer<'a> {
-        EncodeBuffer { 
+        EncodeBuffer {
             buffer: static_buffer,
             len: 0,
         }
@@ -50,23 +51,29 @@ impl EncodeBuffer<'_> {
 
     pub fn encode_tag(&mut self, encodable: impl ToWire, field: Field) -> std::io::Result<usize> {
         encodable.write_tag(self, field)
-    } 
+    }
 
-    pub fn encode(&mut self, encodable: impl ToWire) -> std::io::Result<usize> {
+    pub fn encode_value(&mut self, encodable: impl ToWire) -> std::io::Result<usize> {
         encodable.append(self)
-    } 
+    }
+
+    pub fn encode(
+        &mut self,
+        encodable: impl ToWire + Copy,
+        field: Field,
+    ) -> std::io::Result<usize> {
+        self.encode_tag(encodable, field)?;
+        self.encode_value(encodable)
+    }
 }
+
+/// The ToWire trait encodes the type in the protocol buffers wire format
 pub trait ToWire: WireTyped {
     /// encodes the tag for the type and returns the bytes written
     fn write_tag(&self, buf: &mut EncodeBuffer, field: Field) -> std::io::Result<usize> {
         let (bytes, count) = self.tag(field).encode();
         buf.write(&bytes[0..count])
     }
-
-    // /// write prefix is applicable for strings, bytes, etc
-    // fn write_prefix(&self, _: &mut EncodeBuffer) -> std::io::Result<usize> {
-    //     Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "type does not have prefix"))
-    // }
 
     /// encodes to the end of the encode buffer and returns the number of bytes written
     fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize>;
@@ -76,15 +83,15 @@ pub trait ToWire: WireTyped {
     fn precalculate_size(self) -> usize;
 }
 
-fn write_prefix(buf: &mut EncodeBuffer, len: usize) -> std::io::Result<usize> {
+/// Writes the length prefix. Used for length encoded types.
+pub fn write_prefix(buf: &mut EncodeBuffer, len: usize) -> std::io::Result<usize> {
     let (bytes, count) = (len as u64).to_varint_encoding();
     buf.write(&bytes[..count])
 }
 
-
 impl ToWire for &String {
     fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
-        write_prefix(buf, self.len());
+        write_prefix(buf, self.len())?;
         buf.write(self.as_bytes())
     }
 
@@ -95,7 +102,7 @@ impl ToWire for &String {
 
 impl ToWire for &[u8] {
     fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
-        write_prefix(buf, self.len());
+        write_prefix(buf, self.len())?;
         buf.write(self)
     }
 
@@ -105,7 +112,9 @@ impl ToWire for &[u8] {
 }
 
 impl ToWire for i32
-where i32: ToVarint {
+where
+    i32: ToVarint,
+{
     fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
         leb128::write::signed(buf, self as i64)
     }

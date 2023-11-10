@@ -122,17 +122,18 @@ pub trait WireTyped {
 
 }
 
-
 impl WireTyped for &String {
     fn wiretype(&self) -> WireType {
         WireType::Len
     }
 }
+
 impl WireTyped for &[u8] {
     fn wiretype(&self) -> WireType {
         WireType::VarInt
     }
 }
+
 impl WireTyped for i32 {
     fn wiretype(&self) -> WireType {
         WireType::VarInt

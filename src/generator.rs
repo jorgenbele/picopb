@@ -1,8 +1,8 @@
 /// This module contains the code generator
+use crate::common::{EnumType, FieldQualifier, FieldType, MessageType};
+use crate::parser::ProtoParser;
 /// It takes the parsed result and creates rust code from the input
 use convert_case::{Case, Casing};
-use crate::parser::ProtoParser;
-use crate::common::{FieldQualifier, EnumType, MessageType, FieldType};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -71,20 +71,32 @@ fn generate_enum_from_trait(enum_type: &EnumType) -> Result<()> {
     println!("    fn try_from(value: usize) -> Result<Self, Self::Error> {{");
     println!("        match value {{");
     for (identifier, ordinal) in enum_type.pairs.iter() {
-        println!("            {} => Ok({}::{}),", ordinal, enum_type.identifier, enum_id_to_pascal(identifier)?);
+        println!(
+            "            {} => Ok({}::{}),",
+            ordinal,
+            enum_type.identifier,
+            enum_id_to_pascal(identifier)?
+        );
     }
-    println!("            _ => Err(format!(\"invalid ordinal value: {{}} for enum {}\", value)),", enum_type.identifier);
+    println!(
+        "            _ => Err(format!(\"invalid ordinal value: {{}} for enum {}\", value)),",
+        enum_type.identifier
+    );
     println!("        }}");
     println!("    }}");
     println!("}}");
-
 
     // TryTo
     println!("impl Into<usize> for {} {{", enum_type.identifier);
     println!("    fn into(self) -> usize {{");
     println!("        match self {{");
     for (identifier, ordinal) in enum_type.pairs.iter() {
-        println!("            {}::{} => {},", enum_type.identifier, enum_id_to_pascal(identifier)?, ordinal);
+        println!(
+            "            {}::{} => {},",
+            enum_type.identifier,
+            enum_id_to_pascal(identifier)?,
+            ordinal
+        );
     }
     println!("        }}");
     println!("    }}");
@@ -96,10 +108,7 @@ fn generate_enums(enums: &HashMap<String, EnumType>) -> Result<()> {
     for (_, enum_type) in enums.iter() {
         println!("pub enum {} {{", enum_type.identifier);
         for (identifier, _) in enum_type.pairs.iter() {
-            println!(
-                "    {},",
-                enum_id_to_pascal(identifier)?,
-            )
+            println!("    {},", enum_id_to_pascal(identifier)?,)
         }
         println!("}}");
 

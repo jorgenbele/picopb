@@ -65,7 +65,11 @@ fn main() {
         }
 
         message RepeatedResponse {
-            repeated Response responses = 1; [packed=true,(nanopb).max_size=64]
+            repeated Response responses = 1; [(nanopb).max_size=64]
+        }
+
+        message PackedIntegers {
+            repeated int32 integers = 1; [packed=true, (nanopb).max_size=64]
         }
 
         enum Error {

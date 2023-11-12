@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::wiretypes::{Field, ToVarint, WireTyped};
+use crate::{wiretypes::{Field, ToVarint, WireTyped}, common::Packed};
 
 use leb128;
 
@@ -76,11 +76,11 @@ pub trait ToWire: WireTyped {
     }
 
     /// encodes to the end of the encode buffer and returns the number of bytes written
-    fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize>;
+    fn append(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize>;
 
     /// precalculates the number of bytes required to encode this
     /// will be called before encode_append in some cases
-    fn precalculate_size(self) -> usize;
+    fn precalculate_size(&self) -> usize;
 }
 
 /// Writes the length prefix. Used for length encoded types.
@@ -89,24 +89,41 @@ pub fn write_prefix(buf: &mut EncodeBuffer, len: usize) -> std::io::Result<usize
     buf.write(&bytes[..count])
 }
 
+impl<T> ToWire for Packed<&[T]> 
+    where T: ToWire 
+{
+    fn append(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
+        write_prefix(buf, self.precalculate_size())?;
+        let mut count = 0;
+        for t in self.0.iter() {
+            count += t.append(buf)?;
+        }
+        Ok(count)
+    }
+
+    fn precalculate_size(&self) -> usize {
+        self.0.iter().map(|t| t.precalculate_size()).sum()
+    }
+}
+
 impl ToWire for &String {
-    fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
+    fn append(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
         write_prefix(buf, self.len())?;
         buf.write(self.as_bytes())
     }
 
-    fn precalculate_size(self) -> usize {
+    fn precalculate_size(&self) -> usize {
         self.as_bytes().len()
     }
 }
 
 impl ToWire for &[u8] {
-    fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
+    fn append(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
         write_prefix(buf, self.len())?;
         buf.write(self)
     }
 
-    fn precalculate_size(self) -> usize {
+    fn precalculate_size(&self) -> usize {
         self.len()
     }
 }
@@ -115,12 +132,18 @@ impl ToWire for i32
 where
     i32: ToVarint,
 {
-    fn append(self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
-        leb128::write::signed(buf, self as i64)
+    fn append(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
+        leb128::write::signed(buf, *self as i64)
     }
 
-    fn precalculate_size(self) -> usize {
+    fn precalculate_size(&self) -> usize {
         let (_, size) = self.to_varint_encoding();
         size
     }
+}
+
+pub trait Message {
+    fn encode(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize>;
+    // fn decode(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize>;
+    fn precalculate_size(&self) -> usize;
 }

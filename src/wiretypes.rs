@@ -1,4 +1,5 @@
 use crate::encode::ToWire;
+use crate::common::Packed;
 
 /// This file contains the predefine wiretypes for the types where this is applicable
 /// TODO: ZigZag encoding of signed types
@@ -120,6 +121,13 @@ pub trait WireTyped {
         Tag((field.0 << 3) | self.wiretype().to_id().0)
     }
 
+}
+
+/// When using packed mode the length is prefixed to repeated messages
+impl<T> WireTyped for Packed<T> {
+    fn wiretype(&self) -> WireType {
+        WireType::Len
+    }
 }
 
 impl WireTyped for &String {

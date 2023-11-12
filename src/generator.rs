@@ -56,12 +56,30 @@ fn field_to_rust_type(qualifier: &FieldQualifier, field_type: &FieldType) -> Str
                 field_to_rust_type(&FieldQualifier::Required, field_type),
                 limit
             )
+        },
+
+        (FieldQualifier::PackedRepeatedUnbounded, field_type) => {
+            format!(
+                "picopb::common::Packed<Vec<{}>>",
+                field_to_rust_type(&FieldQualifier::Required, field_type)
+            )
+        }
+        (FieldQualifier::PackedRepeated(limit), field_type) => {
+            format!(
+                "picopb::common::Packed<[{}; {}]>",
+                field_to_rust_type(&FieldQualifier::Required, field_type),
+                limit
+            )
         }
     }
 }
 
 fn enum_id_to_pascal(identifier: &str) -> Result<String> {
     Ok(identifier.to_case(Case::UpperCamel))
+}
+
+fn identifier_to_const_case(identifier: &str) -> Result<String> {
+    Ok(identifier.to_case(Case::UpperSnake))
 }
 
 fn generate_enum_from_trait(enum_type: &EnumType) -> Result<()> {
@@ -120,6 +138,50 @@ fn generate_enums(enums: &HashMap<String, EnumType>) -> Result<()> {
     Ok(())
 }
 
+fn generate_message_metadata(message_type: &MessageType) -> Result<()> {
+    let message_type_identifier = identifier_to_const_case(&message_type.identifier)?;
+
+    // generate struct that holds fields metadata
+    println!("pub struct {}FieldsType {{", message_type.identifier);
+    for (_, field) in message_type.fields.iter() {
+        println!("    pub {}: picopb::common::MessageField,", field.identifier);
+    }
+    println!("}}");
+
+    // generate const struct that fills that struct 
+    println!("const {}_FIELDS: {}FieldsType = {}FieldsType {{", message_type_identifier, message_type.identifier, message_type.identifier);
+    for (_, field) in message_type.fields.iter() {
+        println!("    {}: picopb::common::MessageField {{", field.identifier);
+        println!("        qualifier: {},", field.qualifier.repr());
+        println!("        field_type: {},", field.field_type.repr());
+        println!("        identifier: \"{}\".into(),", field.identifier);
+        println!("        ordinal: {},", field.ordinal);
+        println!("    }},");
+    }
+    println!("}};");
+
+    Ok(())
+}
+
+fn generate_message_encode(message_type: &MessageType) -> Result<()> {
+    println!("impl Encode for &{} {{", message_type.identifier);
+
+    println!("    fn encode(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {{");
+    for (_, field) in message_type.fields.iter() {
+        println!("        buf.append(self.{})", field.identifier);
+
+        println!(
+            "    pub {}: {},",
+            field.identifier,
+            field_to_rust_type(&field.qualifier, &field.field_type)
+        )
+    }
+
+    println!("    }}");
+    println!("}}");
+    Ok(())
+}
+
 fn generate_messages(message_types: &HashMap<String, MessageType>) -> Result<()> {
     for (_, message_type) in message_types.iter() {
         println!("pub struct {} {{", message_type.identifier);
@@ -131,13 +193,27 @@ fn generate_messages(message_types: &HashMap<String, MessageType>) -> Result<()>
             )
         }
         println!("}}");
+        generate_message_metadata(message_type)?;
+
+        println!("impl {} {{", message_type.identifier);
+        println!("    fn fields(&self) -> {}FieldsType {{", message_type.identifier);
+        println!("        {}_FIELDS", identifier_to_const_case(message_type.identifier.as_str())?);
+        println!("    }}");
+        println!("}}");
+
         // TODO: impl decoder
+
         // TODO: impl encoder
+        // generate_message_encode(message_type)?;
     }
     Ok(())
 }
 
+fn generate_imports() {
+}
+
 pub fn generate(parser: &ProtoParser) -> Result<()> {
+    generate_imports();
     generate_enums(&parser.enum_types)?;
     generate_messages(&parser.message_types)?;
     Ok(())

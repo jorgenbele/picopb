@@ -14,7 +14,7 @@ use pest::{
 /// It is implemented using pest
 use pest_derive::Parser;
 
-use crate::common::{EnumType, FieldQualifier, FieldType, MessageField, MessageType, Version};
+use crate::common::{EnumType, FieldQualifier, FieldType, MessageField, MessageType, Version, FieldOption, FieldOptions};
 use crate::wiretypes::Field;
 
 #[derive(Parser, Debug)]
@@ -77,29 +77,6 @@ pub struct ProtoParser {
 type ParseResult = Result<ProtoParser, ParserError>;
 type EmptyParseResult = Result<(), ParserError>;
 
-/// FieldOption represents a single parsed option
-pub enum FieldOption {
-    MaxSize(usize),
-    MaxLen(usize),
-    Packed(bool)
-}
-
-#[derive(Debug)]
-struct FieldOptions {
-    max_size: Option<usize>,
-    max_len: Option<usize>,
-    packed: bool,
-}
-
-impl Default for FieldOptions {
-    fn default() -> Self {
-        Self {
-            max_size: None,
-            max_len: None,
-            packed: false,
-        }
-    }
-}
 
 impl ProtoParser {
     fn usize_from_str(span: Span<'_>, s: &str) -> Result<usize, ParserError> {
@@ -260,7 +237,7 @@ impl ProtoParser {
                     let field_ordinal = Self::ordinal_from_span(field_number.as_span())?;
 
                     let value = MessageField {
-                        qualifier: FieldQualifier::from_str(qualifier.as_str(), options.max_size),
+                        qualifier: FieldQualifier::from_str(qualifier.as_str(), &options),
                         field_type: FieldType::from_str(field_type.as_str(), options.max_size),
                         identifier: field_identifier,
                         ordinal: field_ordinal,

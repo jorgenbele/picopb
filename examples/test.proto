@@ -1,0 +1,6 @@
+syntax = "proto2";
+
+message Query {
+    required bytes key = 1; 
+    required bytes opaque = 2;
+}

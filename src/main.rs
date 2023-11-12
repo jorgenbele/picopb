@@ -78,6 +78,7 @@ fn main() {
     dbg!(&result);
     validate(&result).unwrap();
     generate(&result).unwrap();
+
 }
 
 #[cfg(test)]

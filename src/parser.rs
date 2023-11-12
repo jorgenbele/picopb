@@ -21,7 +21,6 @@ use crate::wiretypes::Field;
 #[grammar = "parser.pest"] // relative to src
 pub struct PicoPBParser;
 
-
 #[derive(Debug)]
 pub struct StaticSpan {
     pub start: usize,
@@ -158,19 +157,12 @@ impl ProtoParser {
         &mut self,
         option_statement: PestPair<'_, Rule>,
     ) -> Result<FieldOption, ParserError> {
-        let option = self.expect_rule(option_statement, Rule::nanopb_option)?;
-        let span = option.as_span();
+        let option = self.expect_rule(option_statement, Rule::packed_option)?;
+        let option_span = option.as_span();
         let mut inner = option.into_inner();
 
-        let value = self.expect_next_match(span, &mut inner, |pair| {
-            pair.as_rule() == Rule::packed_option
-        })?;
+        let packed_bool = self.expect_next_rule(option_span, &mut inner, Rule::bool)?;
 
-        let mut inner = value.into_inner();
-        let packed_bool = inner.next().ok_or(ParserError::ExpectedOptionValue)?;
-        let Rule::bool = packed_bool.as_rule() else {
-            return Err(ParserError::ExpectedOptionValue);
-        };
         match packed_bool.as_str() {
             "true" => Ok(FieldOption::Packed(true)), 
             "false" => Ok(FieldOption::Packed(false)), 
@@ -207,11 +199,6 @@ impl ProtoParser {
         options_statement: PestPair<'_, Rule>,
     ) -> Result<Vec<FieldOption>, ParserError> {
         let options = self.expect_rule(options_statement, Rule::options)?;
-        // let out: Result<Vec<FieldOption>, _> = options.into_inner()
-        //         .into_iter()
-        //         .map(|option| self.parse_option(option))
-        //         .collect();
-
         options.into_inner()
                 .into_iter()
                 .map(|option| self.parse_option(option))
@@ -267,7 +254,6 @@ impl ProtoParser {
                                 FieldOption::Packed(value) => options.packed = *value,
                             }
                         });
-                        println!("Updated OPTIONS");
                     }
 
                     let field_identifier = Self::identifier_from_span(identifier.as_span());
@@ -397,24 +383,8 @@ impl ProtoParser {
 
     fn parse_statement(&mut self, statement: PestPair<'_, Rule>) -> EmptyParseResult {
         let span = statement.as_span();
-        println!("parsing statement");
-
         let statement = self.expect_rule(statement, Rule::statement)?;
         let mut statement_inner = statement.into_inner();
-
-        // let statement = match statement.as_rule() {
-        //     Rule::statement => statement
-        //         .into_inner()
-        //         .next()
-        //         .ok_or(ParserError::ExpectedStatement(span.into()))?,
-        //     _ => {
-        //         return Err(ParserError::ExpectedButGot(
-        //             statement.as_span().into(),
-        //             "Statement".to_string(),
-        //             statement.as_node_tag().unwrap_or("<unknown>").to_string(),
-        //         ))
-        //     }
-        // };
 
         let statement_variant = self.expect_next_match(span, &mut statement_inner, |pair| {
             let rule = pair.as_rule();

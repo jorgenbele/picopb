@@ -146,3 +146,25 @@ impl WireTyped for i32 {
         WireType::VarInt
     }
 }
+
+// TODO: Should not be defined here
+// Should be generated instead
+impl WireTyped for &str {
+    fn wiretype(&self) -> WireType {
+        WireType::Len
+    }
+}
+
+impl WireTyped for String {
+    fn wiretype(&self) -> WireType {
+        WireType::Len
+    }
+}
+
+impl<T> WireTyped for &[T] 
+    where T: WireTyped
+{
+    fn wiretype(&self) -> WireType {
+        WireType::Len
+    }
+}

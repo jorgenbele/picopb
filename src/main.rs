@@ -1,14 +1,42 @@
-use pest::Parser;
+use std::fs::read_to_string;
+use clap::Parser;
+// use pest::Parser;
 use picopb::{
     generator::generate,
     parser::{parse, PicoPBParser, Rule},
     validator::validate,
 };
 
-const PROTO_DEF: &str = "syntax = \"proto2\"; \
-                         message A{int32 int_field = 1;}";
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[arg(short, long, default_value_t = false)]
+    generate: bool,
+
+    #[arg(short, long, default_value_t = false)]
+    verbose: bool,
+
+    #[arg(long, default_value_t = true)]
+    validate: bool,
+
+    proto_file: String,
+}
 
 fn main() {
+    let args = Args::parse();
+
+    let input = read_to_string(args.proto_file).expect("failed to read file");
+    let result = parse(&input).expect("failed to parse input");
+    if args.verbose {
+        dbg!(&result);
+    }
+    if args.validate {
+        validate(&result).expect("failed to validate input");
+    }
+    if args.generate {
+        generate(&result).expect("failed to generate");
+    }
+
     // let example_field = "required string name = 2;";
     // PicoPBParser::parse(Rule::message_field, example_field).unwrap();
 
@@ -63,25 +91,26 @@ fn main() {
         // import \"common.proto\";
         // import \"shared.proto\";
 
-    let result = parse(
-        "
-        syntax = \"proto2\";
 
-        message Query {
-            required bytes key = 1; [(nanopb).max_size=8]
-            required bytes opaque = 2; [(nanopb).max_size=8]
-        }
+    // let result = parse(
+    //     "
+    //     syntax = \"proto2\";
 
-        enum Error {
-            ERROR_INVALID_KEY = 1;
-            ERROR_NOT_FOUND = 2;
-        }
-    ",
-    );
-    let result = result.unwrap();
-    dbg!(&result);
-    validate(&result).unwrap();
-    generate(&result).unwrap();
+    //     message Query {
+    //         required bytes key = 1; [(nanopb).max_size=8]
+    //         required bytes opaque = 2; [(nanopb).max_size=8]
+    //     }
+
+    //     enum Error {
+    //         ERROR_INVALID_KEY = 1;
+    //         ERROR_NOT_FOUND = 2;
+    //     }
+    // ",
+    // );
+    // let result = result.unwrap();
+    // dbg!(&result);
+    // validate(&result).unwrap();
+    // generate(&result).unwrap();
 
 }
 

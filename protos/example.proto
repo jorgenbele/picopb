@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+message Query {
+    required bytes key = 1;
+    required bytes opaque = 2;
+}
+
+enum Error {
+    ERROR_INVALID_KEY = 1;
+    ERROR_NOT_FOUND = 2;
+}

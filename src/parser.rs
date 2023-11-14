@@ -118,7 +118,7 @@ impl ProtoParser {
         let variant_span = variant.as_span();
         let variant_rule = variant.as_rule();
 
-        dbg!(variant_span);
+        // dbg!(variant_span);
 
         let number_value = self.expect_next_rule(option_span, &mut inner, Rule::number)?;
         
@@ -221,7 +221,7 @@ impl ProtoParser {
 
                     // parse optional options
                     if let Some(next) = message_inner.next() {
-                        dbg!(&next);
+                        // dbg!(&next);
                         let opts = self.parse_options(next)?;
                         opts.iter().for_each(|option| {
                             match option {
@@ -380,7 +380,7 @@ impl ProtoParser {
 
 pub fn parse(input: &str) -> ParseResult {
     let parse = PicoPBParser::parse(Rule::proto_definition, input)?;
-    dbg!(&parse);
+    // dbg!(&parse);
 
     let mut output = ProtoParser {
         version: Version::Unknown,

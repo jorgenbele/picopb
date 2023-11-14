@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 arraystring = "0.3.0"
 bytes = "1.5.0"
+clap = { version = "4.4.8", features = ["derive"] }
 convert_case = "0.6.0"
 leb128 = "0.2.5"
 pest = "2.7.5"

@@ -1,5 +1,5 @@
 /// This module contains the code generator
-use crate::common::{EnumType, FieldQualifier, FieldType, MessageType};
+use crate::common::{EnumType, FieldQualifier, FieldType, MessageType, MessageField, Identifier};
 use crate::parser::ProtoParser;
 /// It takes the parsed result and creates rust code from the input
 use convert_case::{Case, Casing};
@@ -171,12 +171,52 @@ fn generate_message_metadata(message_type: &MessageType) -> Result<()> {
     Ok(())
 }
 
+fn as_encodable_type(field: &MessageField, prefix: &str) -> String {
+    let identifier = &field.identifier;
+
+    let wrapped = match field.qualifier {
+        FieldQualifier::Repeated(_) | FieldQualifier::PackedRepeated(_) 
+            => return format!("{prefix}{identifier}"),
+        FieldQualifier::PackedRepeatedUnbounded | FieldQualifier::RepeatedUnbounded 
+            => return format!("{prefix}{identifier}.as_slice()"),
+        _ => format!("{prefix}{identifier}"),
+    };
+
+    match field.field_type {
+        FieldType::UnboundedString => format!("{wrapped}.as_str()"),
+        FieldType::UnboundedBytes => todo!(),
+        FieldType::String(_) => format!("{wrapped}.as_slice()"),
+        FieldType::Bytes(_) => format!("{wrapped}.as_bytes()"),
+        FieldType::EnumType(_) => todo!(),
+        FieldType::MessageType(_, _) => todo!(),
+        FieldType::UnboundedMessageType(_) => todo!(),
+        FieldType::Bool | FieldType::Int32 | FieldType::Int64 | FieldType::Uint32 | FieldType::Uint64  => format!("{wrapped}"),
+    }
+}
+
 fn generate_message_encode(message_type: &MessageType) -> Result<()> {
     println!("impl picopb::encode::Encode for &{} {{", message_type.identifier);
     println!("    fn encode(&self, buf: &mut picopb::encode::EncodeBuffer) -> std::io::Result<usize> {{");
     println!("        let mut total_size = 0;");
     for (_, field) in message_type.fields.iter() {
-        println!("        total_size += buf.encode(self.{}.as_slice(), self.fields().{}.ordinal)?;", field.identifier, field.identifier);
+        let identifier = &field.identifier;
+
+        // We don't want to encode empty optional values
+        match field.qualifier {
+            FieldQualifier::Optional => {
+                let value_encodable_type = as_encodable_type(field, "value_");
+                println!("        if let Some(value_{identifier}) = &self.{identifier} {{");
+                println!("            total_size += buf.encode({value_encodable_type}, self.fields().{identifier}.ordinal)?;");
+                println!("        }}");
+            },
+            _ => {
+                let self_encodable_type = as_encodable_type(field, "self.");
+                println!("        total_size += buf.encode({self_encodable_type}, self.fields().{identifier}.ordinal)?;");
+            }
+        }
+
+
+
     }
     println!("        Ok(total_size)");
     println!("    }}");
@@ -184,7 +224,23 @@ fn generate_message_encode(message_type: &MessageType) -> Result<()> {
     println!("    fn precalculate_size(&self) -> usize {{");
     println!("        let mut total_size = 0;");
     for (_, field) in message_type.fields.iter() {
-        println!("        total_size += self.{}.as_slice().precalculate_size();", field.identifier);
+        let encodable_type = as_encodable_type(field, "");
+        let self_encodable_type = as_encodable_type(field, "self.");
+        let identifier = &field.identifier;
+
+        // We don't want to encode empty optional values
+        // and therefore should not count them towards the size
+        match field.qualifier {
+            FieldQualifier::Optional => {
+                println!("        if let Some(value_{identifier}) = &self.{identifier} {{");
+                println!("            total_size += value_{encodable_type}.precalculate_size();");
+                println!("        }}");
+            },
+            _ => {
+                println!("        total_size += {self_encodable_type}.precalculate_size();");
+            }
+        }
+
     }
     println!("        total_size");
     println!("    }}");

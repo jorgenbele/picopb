@@ -1,0 +1,7 @@
+syntax = "proto2";
+
+message MessageWithOptionalField {
+  optional string a = 1;
+  repeated string b = 4;
+  repeated int32 e = 5;
+} 

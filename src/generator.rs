@@ -144,40 +144,51 @@ fn generate_message_metadata(message_type: &MessageType) -> Result<()> {
     // generate struct that holds fields metadata
     println!("pub struct {}FieldsType {{", message_type.identifier);
     for (_, field) in message_type.fields.iter() {
-        println!("    pub {}: picopb::common::MessageField,", field.identifier);
+        println!("    pub {}: picopb::common::ConstMessageField,", field.identifier);
     }
     println!("}}");
 
     // generate const struct that fills that struct 
     println!("const {}_FIELDS: {}FieldsType = {}FieldsType {{", message_type_identifier, message_type.identifier, message_type.identifier);
     for (_, field) in message_type.fields.iter() {
-        println!("    {}: picopb::common::MessageField {{", field.identifier);
+        println!("    {}: picopb::common::ConstMessageField {{", field.identifier);
         println!("        qualifier: {},", field.qualifier.repr());
         println!("        field_type: {},", field.field_type.repr());
-        println!("        identifier: \"{}\".into(),", field.identifier);
-        println!("        ordinal: {},", field.ordinal);
+        println!("        identifier: \"{}\",", field.identifier);
+        println!("        ordinal: picopb::common::Field({}),", field.ordinal.0);
         println!("    }},");
     }
     println!("}};");
+
+    // impl self::fields() that returns the fields type
+    println!("impl {} {{", message_type.identifier);
+    println!("    fn fields(&self) -> {}FieldsType {{", message_type.identifier);
+    println!("        {}_FIELDS", identifier_to_const_case(message_type.identifier.as_str())?);
+    println!("    }}");
+    println!("}}");
+
 
     Ok(())
 }
 
 fn generate_message_encode(message_type: &MessageType) -> Result<()> {
-    println!("impl Encode for &{} {{", message_type.identifier);
-
-    println!("    fn encode(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {{");
+    println!("impl picopb::encode::Encode for &{} {{", message_type.identifier);
+    println!("    fn encode(&self, buf: &mut picopb::encode::EncodeBuffer) -> std::io::Result<usize> {{");
+    println!("        let mut total_size = 0;");
     for (_, field) in message_type.fields.iter() {
-        println!("        buf.append(self.{})", field.identifier);
-
-        println!(
-            "    pub {}: {},",
-            field.identifier,
-            field_to_rust_type(&field.qualifier, &field.field_type)
-        )
+        println!("        total_size += buf.encode(self.{}.as_slice(), self.fields().{}.ordinal)?;", field.identifier, field.identifier);
     }
-
+    println!("        Ok(total_size)");
     println!("    }}");
+
+    println!("    fn precalculate_size(&self) -> usize {{");
+    println!("        let mut total_size = 0;");
+    for (_, field) in message_type.fields.iter() {
+        println!("        total_size += self.{}.as_slice().precalculate_size();", field.identifier);
+    }
+    println!("        total_size");
+    println!("    }}");
+
     println!("}}");
     Ok(())
 }
@@ -194,22 +205,18 @@ fn generate_messages(message_types: &HashMap<String, MessageType>) -> Result<()>
         }
         println!("}}");
         generate_message_metadata(message_type)?;
-
-        println!("impl {} {{", message_type.identifier);
-        println!("    fn fields(&self) -> {}FieldsType {{", message_type.identifier);
-        println!("        {}_FIELDS", identifier_to_const_case(message_type.identifier.as_str())?);
-        println!("    }}");
-        println!("}}");
-
         // TODO: impl decoder
 
         // TODO: impl encoder
-        // generate_message_encode(message_type)?;
+        generate_message_encode(message_type)?;
     }
     Ok(())
 }
 
 fn generate_imports() {
+    println!("use picopb::common::*;");
+    println!("use picopb::encode::ToWire;");
+    println!("use picopb::encode::Encode;");
 }
 
 pub fn generate(parser: &ProtoParser) -> Result<()> {

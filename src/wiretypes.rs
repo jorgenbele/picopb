@@ -1,9 +1,8 @@
 use crate::encode::ToWire;
-use crate::common::Packed;
+use crate::common::{Packed, Field};
 
 /// This file contains the predefine wiretypes for the types where this is applicable
 /// TODO: ZigZag encoding of signed types
-pub struct Field(pub u32);
 pub struct WireTypeId(pub u32);
 pub struct Tag(pub u32);
 
@@ -138,7 +137,7 @@ impl WireTyped for &String {
 
 impl WireTyped for &[u8] {
     fn wiretype(&self) -> WireType {
-        WireType::VarInt
+        WireType::Len
     }
 }
 

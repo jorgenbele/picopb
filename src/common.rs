@@ -1,7 +1,5 @@
 use std::collections::BTreeMap;
 
-use crate::wiretypes::{WireType, Field};
-
 
 #[derive(Debug, Clone)]
 pub enum FieldType {
@@ -41,24 +39,24 @@ impl FieldType {
 
     pub fn repr(&self) -> String {
         match self {
-            Self::UnboundedString => "FieldType::UnboundedString".into(),
-            Self::UnboundedBytes => "FieldType::UnboundedBytes".into(),
-            Self::String(n) => format!("FieldType::String({})", n),
-            Self::Bytes(n) => format!("FieldType::Bytes({})", n),
-            Self::Bool => "FieldType::Bool".into(),
-            Self::Int32 => "FieldType::Int32".into(),
-            Self::Int64 => "FieldType::Int64".into(),
-            Self::Uint64 => "FieldType::Uint64".into(),
-            Self::Uint32 => "FieldType::Uint32".into(),
-            Self::EnumType(identifier) => format!("FieldType::EnumType(\"{}\")", identifier),
-            Self::MessageType(identifier, size) => format!("FieldType::MessageType(\"{}\", {})", identifier, size),
-            Self::UnboundedMessageType(identifier) => format!("FieldType::UnboundedMessageType(\"{}\")", identifier),
+            Self::UnboundedString => "picopb::common::FieldType::UnboundedString".into(),
+            Self::UnboundedBytes => "picopb::common::FieldType::UnboundedBytes".into(),
+            Self::String(n) => format!("picopb::common::FieldType::String({})", n),
+            Self::Bytes(n) => format!("picopb::common::FieldType::Bytes({})", n),
+            Self::Bool => "picopb::common::FieldType::Bool".into(),
+            Self::Int32 => "picopb::common::FieldType::Int32".into(),
+            Self::Int64 => "picopb::common::FieldType::Int64".into(),
+            Self::Uint64 => "picopb::common::FieldType::Uint64".into(),
+            Self::Uint32 => "picopb::common::FieldType::Uint32".into(),
+            Self::EnumType(identifier) => format!("picopb::common::FieldType::EnumType(\"{}\")", identifier),
+            Self::MessageType(identifier, size) => format!("picopb::common::FieldType::MessageType(\"{}\", {})", identifier, size),
+            Self::UnboundedMessageType(identifier) => format!("picopb::common::FieldType::UnboundedMessageType(\"{}\")", identifier),
         }   
     }
 }
 
 pub type Identifier = String;
-pub type Ordinal = i32;
+pub type Ordinal = u32;
 
 #[derive(Debug, Clone)]
 pub enum FieldQualifier {
@@ -76,12 +74,12 @@ pub enum FieldQualifier {
 impl FieldQualifier {
     pub fn repr(&self) -> String {
         match *self {
-            Self::Optional => "FieldQualifier::Optional".into(),
-            Self::Required => "FieldQualifier::Required".into(),
-            Self::RepeatedUnbounded => "FieldQualifier::RepeatedUnbounded".into(),
-            Self::Repeated(len) => format!("FieldQualifier::Repeated({})", len), 
-            Self::PackedRepeated(len) => format!("FieldQualifier::PackedRepeated({})", len), 
-            Self::PackedRepeatedUnbounded => format!("FieldQualifier::PackedRepeatedUnbounded"), 
+            Self::Optional => "picopb::common::FieldQualifier::Optional".into(),
+            Self::Required => "picopb::common::FieldQualifier::Required".into(),
+            Self::RepeatedUnbounded => "picopb::common::FieldQualifier::RepeatedUnbounded".into(),
+            Self::Repeated(len) => format!("picopb::common::FieldQualifier::Repeated({})", len), 
+            Self::PackedRepeated(len) => format!("picopb::common::FieldQualifier::PackedRepeated({})", len), 
+            Self::PackedRepeatedUnbounded => format!("picopb::common::FieldQualifier::PackedRepeatedUnbounded"), 
         }   
     }
 }
@@ -109,7 +107,6 @@ impl Default for FieldOptions {
         }
     }
 }
-
 
 impl FieldQualifier {
     pub fn from_str(s: &str, options: &FieldOptions) -> Self {
@@ -141,13 +138,23 @@ impl FieldQualifier {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Field(pub u32);
 
 #[derive(Debug, Clone)]
 pub struct MessageField {
     pub qualifier: FieldQualifier,
     pub field_type: FieldType,
     pub identifier: Identifier,
-    pub ordinal: Ordinal,
+    pub ordinal: Field,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConstMessageField {
+    pub qualifier: FieldQualifier,
+    pub field_type: FieldType,
+    pub identifier: &'static str,
+    pub ordinal: Field,
 }
 
 #[derive(Debug, Clone)]
@@ -159,7 +166,7 @@ pub struct MessageType {
 #[derive(Debug)]
 pub struct EnumType {
     pub identifier: String,
-    pub pairs: BTreeMap<String, i32>,
+    pub pairs: BTreeMap<String, Ordinal>,
 }
 
 #[derive(Debug)]

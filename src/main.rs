@@ -46,30 +46,30 @@ fn main() {
 
     // println!("{}", example_proto2);
     // PicoPBParser::parse(Rule::proto_definition, example_proto2).unwrap();
+        // message Response {
+        //     required bytes value = 1; [(nanopb).max_size=64]
+        //     required bytes opaque = 2;
+        //     optional Error error = 3;
+        // }
+
+        // message RepeatedResponse {
+        //     repeated Response responses = 1; [(nanopb).max_size=64]
+        // }
+
+        // message PackedIntegers {
+        //     repeated int32 integers = 1; [packed=true, (nanopb).max_size=64]
+        // }
+
+        // import \"common.proto\";
+        // import \"shared.proto\";
 
     let result = parse(
         "
         syntax = \"proto2\";
-        import \"common.proto\";
-        import \"shared.proto\";
 
         message Query {
-            required bytes key = 1; [(nanopb).max_size=128]
-            required bytes opaque = 2; [(nanopb).max_size=64]
-        }
-
-        message Response {
-            required bytes value = 1; [(nanopb).max_size=64]
-            required bytes opaque = 2;
-            optional Error error = 3;
-        }
-
-        message RepeatedResponse {
-            repeated Response responses = 1; [(nanopb).max_size=64]
-        }
-
-        message PackedIntegers {
-            repeated int32 integers = 1; [packed=true, (nanopb).max_size=64]
+            required bytes key = 1; [(nanopb).max_size=8]
+            required bytes opaque = 2; [(nanopb).max_size=8]
         }
 
         enum Error {

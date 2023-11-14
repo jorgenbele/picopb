@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::{wiretypes::{Field, ToVarint, WireTyped}, common::Packed};
+use crate::{wiretypes::{ToVarint, WireTyped}, common::{Packed, Field}};
 
 use leb128;
 
@@ -71,7 +71,10 @@ impl EncodeBuffer<'_> {
 pub trait ToWire: WireTyped {
     /// encodes the tag for the type and returns the bytes written
     fn write_tag(&self, buf: &mut EncodeBuffer, field: Field) -> std::io::Result<usize> {
-        let (bytes, count) = self.tag(field).encode();
+        let tag = self.tag(field);
+        dbg!(&tag.0);
+        let (bytes, count) = tag.encode();
+        dbg!(&bytes);
         buf.write(&bytes[0..count])
     }
 
@@ -119,6 +122,7 @@ impl ToWire for &String {
 
 impl ToWire for &[u8] {
     fn append(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
+        dbg!(self.len());
         write_prefix(buf, self.len())?;
         buf.write(self)
     }
@@ -142,7 +146,7 @@ where
     }
 }
 
-pub trait Message {
+pub trait Encode {
     fn encode(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize>;
     // fn decode(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize>;
     fn precalculate_size(&self) -> usize;

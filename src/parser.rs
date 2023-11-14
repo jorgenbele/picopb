@@ -14,8 +14,7 @@ use pest::{
 /// It is implemented using pest
 use pest_derive::Parser;
 
-use crate::common::{EnumType, FieldQualifier, FieldType, MessageField, MessageType, Version, FieldOption, FieldOptions};
-use crate::wiretypes::Field;
+use crate::common::{EnumType, FieldQualifier, Field, FieldType, MessageField, MessageType, Version, FieldOption, FieldOptions};
 
 #[derive(Parser, Debug)]
 #[grammar = "parser.pest"] // relative to src
@@ -240,7 +239,7 @@ impl ProtoParser {
                         qualifier: FieldQualifier::from_str(qualifier.as_str(), &options),
                         field_type: FieldType::from_str(field_type.as_str(), options.max_size),
                         identifier: field_identifier,
-                        ordinal: field_ordinal,
+                        ordinal: Field(field_ordinal),
                     };
                     message_type.fields.insert(field_ordinal, value);
                 }
@@ -262,9 +261,9 @@ impl ProtoParser {
         identifier_str[1..identifier_str.len() - 1].to_string()
     }
 
-    fn ordinal_from_span<'i>(span: Span<'i>) -> Result<i32, ParserError> {
+    fn ordinal_from_span<'i>(span: Span<'i>) -> Result<u32, ParserError> {
         let ordinal_str = span.as_str();
-        let parse_result = ordinal_str.parse::<i32>();
+        let parse_result = ordinal_str.parse::<u32>();
         parse_result.map_err(|err| ParserError::ParseIntError(span.into(), err))
     }
 
@@ -316,7 +315,6 @@ impl ProtoParser {
             rule == Rule::message_definition || rule == Rule::enum_definition
         })?;
 
-        println!("Parsing block");
         // dbg!(&statement);
         match next.as_rule() {
             Rule::message_definition => self.parse_message_definition(next),
@@ -330,7 +328,6 @@ impl ProtoParser {
     }
 
     fn parse_import_statement(&mut self, statement: PestPair<'_, Rule>) -> EmptyParseResult {
-        println!("Parsing import statement");
         let span = statement.as_span();
         if let Some(value) = statement.into_inner().next() {
             let slice = value.as_span().as_str();

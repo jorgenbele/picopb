@@ -1,4 +1,4 @@
-use picopb::common::*;
+
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 use picopb::randomizer::{randomized, Randomize};
@@ -19,9 +19,9 @@ impl TryFrom<usize> for Error {
         }
     }
 }
-impl Into<usize> for Error {
-    fn into(self) -> usize {
-        match self {
+impl From<Error> for usize {
+    fn from(val: Error) -> Self {
+        match val {
             Error::ErrorInvalidKey => 1,
             Error::ErrorNotFound => 2,
         }

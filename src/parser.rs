@@ -1,11 +1,11 @@
 use std::num::ParseIntError;
-use std::option;
+
 use std::{
     collections::{BTreeMap, HashMap},
     hash::Hash,
 };
 
-use pest::state;
+
 use pest::{
     error::Error as PestError, iterators::Pair as PestPair, iterators::Pairs as PestPairs, Parser,
     Span,
@@ -145,7 +145,7 @@ impl ProtoParser {
         let option_span = option.as_span();
         let mut inner = option.into_inner();
 
-        let variant = self.expect_next_match(option_span.into(), &mut inner, |pair| {
+        let variant = self.expect_next_match(option_span, &mut inner, |pair| {
             let rule = pair.as_rule();
             rule == Rule::max_size_option || rule == Rule::max_len_option
         })?;
@@ -158,15 +158,15 @@ impl ProtoParser {
 
         match variant_rule {
             Rule::max_size_option => Ok(FieldOption::MaxSize(Self::usize_from_str(
-                variant_span.into(),
+                variant_span,
                 number_value.as_str(),
             )?)),
             Rule::max_len_option => Ok(FieldOption::MaxLen(Self::usize_from_str(
-                variant_span.into(),
+                variant_span,
                 number_value.as_str(),
             )?)),
             _ => {
-                return Err(ParserError::ExpectedButGot(
+                Err(ParserError::ExpectedButGot(
                     variant_span.into(),
                     "max_size_option or max_len_option".into(),
                     "ERR".into(),
@@ -214,8 +214,8 @@ impl ProtoParser {
         })?;
 
         match option_variant.as_rule() {
-            Rule::nanopb_option => return self.parse_nanopb_option(option_variant),
-            Rule::packed_option => return self.parse_packed_option(option_variant),
+            Rule::nanopb_option => self.parse_nanopb_option(option_variant),
+            Rule::packed_option => self.parse_packed_option(option_variant),
             _ => {
                 return Err(ParserError::ExpectedButGot(
                     option_variant.as_span().into(),
@@ -235,7 +235,6 @@ impl ProtoParser {
         let options = self.expect_rule(options_statement, Rule::options)?;
         options
             .into_inner()
-            .into_iter()
             .map(|option| self.parse_option(option))
             .collect()
     }
@@ -268,22 +267,22 @@ impl ProtoParser {
                     let mut message_inner = value.into_inner();
 
                     let qualifier = self.expect_next_rule(
-                        value_span.into(),
+                        value_span,
                         &mut message_inner,
                         Rule::qualifier,
                     )?;
                     let field_type = self.expect_next_rule(
-                        value_span.into(),
+                        value_span,
                         &mut message_inner,
                         Rule::field_type,
                     )?;
                     let identifier = self.expect_next_rule(
-                        value_span.into(),
+                        value_span,
                         &mut message_inner,
                         Rule::identifier,
                     )?;
                     let field_number =
-                        self.expect_next_rule(value_span.into(), &mut message_inner, Rule::number)?;
+                        self.expect_next_rule(value_span, &mut message_inner, Rule::number)?;
 
                     // TODO:
                     let mut options = FieldOptions {
@@ -322,17 +321,17 @@ impl ProtoParser {
         Ok(())
     }
 
-    fn identifier_from_span<'i>(span: Span<'i>) -> String {
+    fn identifier_from_span(span: Span<'_>) -> String {
         let identifier_str = span.as_str();
         identifier_str.to_string()
     }
 
-    fn string_from_span<'i>(span: Span<'i>) -> String {
+    fn string_from_span(span: Span<'_>) -> String {
         let identifier_str = span.as_str();
         identifier_str[1..identifier_str.len() - 1].to_string()
     }
 
-    fn ordinal_from_span<'i>(span: Span<'i>) -> Result<u32, ParserError> {
+    fn ordinal_from_span(span: Span<'_>) -> Result<u32, ParserError> {
         let ordinal_str = span.as_str();
         let parse_result = ordinal_str.parse::<u32>();
         parse_result.map_err(|err| ParserError::ParseIntError(span.into(), err))
@@ -362,12 +361,12 @@ impl ProtoParser {
                     let mut enum_inner = value.into_inner();
 
                     let identifier = self.expect_next_rule(
-                        value_span.into(),
+                        value_span,
                         &mut enum_inner,
                         Rule::identifier,
                     )?;
                     let number =
-                        self.expect_next_rule(value_span.into(), &mut enum_inner, Rule::number)?;
+                        self.expect_next_rule(value_span, &mut enum_inner, Rule::number)?;
 
                     let field_identifier = Self::identifier_from_span(identifier.as_span());
                     let field_ordinal = Self::ordinal_from_span(number.as_span())?;

@@ -1,6 +1,6 @@
-use std::process::Stdio;
 
-use picopb::common::*;
+
+
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 pub enum Error {
@@ -17,9 +17,9 @@ impl TryFrom<usize> for Error {
         }
     }
 }
-impl Into<usize> for Error {
-    fn into(self) -> usize {
-        match self {
+impl From<Error> for usize {
+    fn from(val: Error) -> Self {
+        match val {
             Error::ErrorInvalidKey => 1,
             Error::ErrorNotFound => 2,
         }
@@ -67,7 +67,7 @@ impl picopb::encode::Encode for &Query {
     }
 }
 
-use std::io;
+
 use std::io::Write;
 fn main() {
     let q = Query {

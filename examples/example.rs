@@ -1,4 +1,4 @@
-use picopb::common::*;
+
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 use std::ops::Deref;
@@ -16,9 +16,9 @@ impl TryFrom<usize> for Error {
         }
     }
 }
-impl Into<usize> for Error {
-    fn into(self) -> usize {
-        match self {
+impl From<Error> for usize {
+    fn from(val: Error) -> Self {
+        match val {
             Error::ErrorInvalidKey => 1,
             Error::ErrorNotFound => 2,
         }
@@ -67,7 +67,7 @@ impl picopb::encode::Encode for &Query {
 }
 
 use bytes::Bytes;
-use std::io;
+
 use std::io::Write;
 fn main() {
     let key = "key_str".as_bytes();

@@ -41,7 +41,7 @@ impl Write for EncodeBuffer<'_> {
 }
 
 impl EncodeBuffer<'_> {
-    pub fn from_static<'a>(static_buffer: &'a mut [u8]) -> EncodeBuffer<'a> {
+    pub fn from_static(static_buffer: &mut [u8]) -> EncodeBuffer<'_> {
         EncodeBuffer {
             buffer: static_buffer,
             len: 0,

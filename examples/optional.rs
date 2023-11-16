@@ -1,4 +1,4 @@
-use picopb::common::*;
+
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 pub struct MessageWithOptionalField {
@@ -48,7 +48,7 @@ impl picopb::encode::Encode for &MessageWithOptionalField {
     }
 }
 
-use std::io;
+
 use std::io::Write;
 fn main() {
     let q = MessageWithOptionalField {

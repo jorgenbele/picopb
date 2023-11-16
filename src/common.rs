@@ -88,7 +88,7 @@ impl FieldQualifier {
                 format!("picopb::common::FieldQualifier::PackedRepeated({})", len)
             }
             Self::PackedRepeatedUnbounded => {
-                format!("picopb::common::FieldQualifier::PackedRepeatedUnbounded")
+                "picopb::common::FieldQualifier::PackedRepeatedUnbounded".to_string()
             }
         }
     }
@@ -102,21 +102,14 @@ pub enum FieldOption {
 }
 
 #[derive(Debug)]
+#[derive(Default)]
 pub struct FieldOptions {
     pub max_size: Option<usize>,
     pub max_len: Option<usize>,
     pub packed: bool,
 }
 
-impl Default for FieldOptions {
-    fn default() -> Self {
-        Self {
-            max_size: None,
-            max_len: None,
-            packed: false,
-        }
-    }
-}
+
 
 impl FieldQualifier {
     pub fn from_str(s: &str, options: &FieldOptions) -> Self {

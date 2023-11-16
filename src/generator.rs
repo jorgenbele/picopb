@@ -1,5 +1,5 @@
 /// This module contains the code generator
-use crate::common::{EnumType, FieldQualifier, FieldType, Identifier, MessageField, MessageType};
+use crate::common::{EnumType, FieldQualifier, FieldType, MessageField, MessageType};
 use crate::parser::ProtoParser;
 /// It takes the parsed result and creates rust code from the input
 use convert_case::{Case, Casing};
@@ -21,21 +21,21 @@ fn field_to_rust_type(qualifier: &FieldQualifier, field_type: &FieldType) -> Str
             FieldType::UnboundedString => "String".to_owned(),
             FieldType::String(limit) => format!("ArrayString<{limit}>"),
             FieldType::Bytes(limit) => format!("[u8; {}]", limit),
-            FieldType::UnboundedBytes => format!("bytes::Bytes"),
+            FieldType::UnboundedBytes => "bytes::Bytes".to_string(),
             FieldType::Int32 => "i32".to_owned(),
             FieldType::Int64 => "i64".to_owned(),
             FieldType::Uint64 => "u64".to_owned(),
             FieldType::Uint32 => "u32".to_owned(),
-            FieldType::MessageType(s, _) => format!("{s}"),
-            FieldType::UnboundedMessageType(s) => format!("{s}"),
-            FieldType::EnumType(s) => format!("{s}"),
+            FieldType::MessageType(s, _) => s.to_string(),
+            FieldType::UnboundedMessageType(s) => s.to_string(),
+            FieldType::EnumType(s) => s.to_string(),
         },
         (FieldQualifier::Optional, field_type) => match field_type {
             FieldType::Bool => "Option<bool>".to_owned(),
             FieldType::UnboundedString => "Option<String>".to_owned(),
             FieldType::String(limit) => format!("Option<ArrayString<{limit}>>"),
             FieldType::Bytes(limit) => format!("Option<[u8; {}]>", limit),
-            FieldType::UnboundedBytes => format!("Option<bytes::Bytes>"),
+            FieldType::UnboundedBytes => "Option<bytes::Bytes>".to_string(),
             FieldType::Int32 => "Option<i32>".to_owned(),
             FieldType::Int64 => "Option<i64>".to_owned(),
             FieldType::Uint64 => "Option<u64>".to_owned(),
@@ -221,7 +221,7 @@ fn as_encodable_type(field: &MessageField, prefix: &str) -> String {
         | FieldType::Int32
         | FieldType::Int64
         | FieldType::Uint32
-        | FieldType::Uint64 => format!("{wrapped}"),
+        | FieldType::Uint64 => wrapped.to_string(),
     }
 }
 

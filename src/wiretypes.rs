@@ -1,5 +1,5 @@
 use crate::common::{Field, Packed};
-use crate::encode::ToWire;
+
 
 /// This file contains the predefine wiretypes for the types where this is applicable
 /// TODO: ZigZag encoding of signed types

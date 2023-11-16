@@ -1,8 +1,8 @@
-use picopb::common::*;
+
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 use picopb::randomizer::{randomized, Randomize};
-use std::ops::Deref;
+
 #[derive(Default, Debug)]
 pub struct MessageWithOptionalField {
     pub a: Option<String>,
@@ -71,8 +71,8 @@ impl Randomize<MessageWithOptionalField> for MessageWithOptionalField {
     }
 }
 
-use bytes::Bytes;
-use std::io;
+
+
 use std::io::Write;
 fn main() {
     let message = MessageWithOptionalField::randomized();

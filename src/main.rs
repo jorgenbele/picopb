@@ -3,7 +3,7 @@ use std::fs::read_to_string;
 // use pest::Parser;
 use picopb::{
     generator::generate,
-    parser::{parse, PicoPBParser, Rule},
+    parser::{parse},
     validator::validate,
 };
 

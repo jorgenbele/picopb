@@ -1,7 +1,7 @@
 use crate::common::{FieldType, Version};
 /// This module contains a basic validator for the protobuf definition
 /// It will check that all types are valid (either defined or builtin)
-use crate::parser::{ParserError, ProtoParser};
+use crate::parser::{ProtoParser};
 
 use std::collections::HashSet;
 

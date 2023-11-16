@@ -75,9 +75,7 @@ pub trait ToWire: WireTyped {
     /// encodes the tag for the type and returns the bytes written
     fn write_tag(&self, buf: &mut EncodeBuffer, field: Field) -> std::io::Result<usize> {
         let tag = self.tag(field);
-        dbg!(&tag.0);
         let (bytes, count) = tag.encode();
-        dbg!(&bytes);
         buf.write(&bytes[0..count])
     }
 
@@ -126,7 +124,6 @@ impl ToWire for &String {
 
 impl ToWire for &[u8] {
     fn append(&self, buf: &mut EncodeBuffer) -> std::io::Result<usize> {
-        dbg!(self.len());
         write_prefix(buf, self.len())?;
         buf.write(self)
     }

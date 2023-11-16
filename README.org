@@ -1,12 +1,14 @@
 * PicoPB - Protobuf in embedded Rust
-
 * TODO:
-- packed fields support in parser and encoder
+  - support for sub-message and enums in encoder
+  - start work on decoder
+  - make use of `randomized()` to write tests that operate on random data 
+  - support proto3
 
 * Goals
 - Small: library < 1500 LOC
 - Generated code: minimal
-- No memory allocation
+- No run-time memory allocation
 - Be compatible with NanoPB
 - proto v2 is first priority
 - Supports NanoPB max_size option
@@ -30,13 +32,17 @@
 * oneof
 - This will be validated
 
+
+* Currently implemented
+- Parser for proto2 syntax
+- Library functions for encoding primitive types 
+- Library functions for encoding repeated types
+- Code generation for generating structs and enums from Protobuf definitions
+- Code generation for encode functionality for structs 
+
 * Encoding
 
 * Decoding
-
-* How
-- Use macros to define the structs
-  `picopb_struct!(SOMETHING HERE)`
 
 * Example
 #+BEGIN_SRC

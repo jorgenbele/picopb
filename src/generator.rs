@@ -125,8 +125,14 @@ fn generate_enum_from_trait(enum_type: &EnumType) -> Result<()> {
 
 fn generate_enums(enums: &HashMap<String, EnumType>) -> Result<()> {
     for (_, enum_type) in enums.iter() {
+        println!("#[derive(Default, Debug)]");
         println!("pub enum {} {{", enum_type.identifier);
+        let mut first = true;
         for (identifier, _) in enum_type.pairs.iter() {
+            if first {
+                println!("    #[default]");
+                first = false;
+            }
             println!("    {},", enum_id_to_pascal(identifier)?,)
         }
         println!("}}");
@@ -143,6 +149,8 @@ fn generate_message_metadata(message_type: &MessageType) -> Result<()> {
     let message_type_identifier = identifier_to_const_case(&message_type.identifier)?;
 
     // generate struct that holds fields metadata
+
+    println!("#[derive(Debug)]");
     println!("pub struct {}FieldsType {{", message_type.identifier);
     for (_, field) in message_type.fields.iter() {
         println!("    pub {}: picopb::common::ConstMessageField,", field.identifier);
@@ -249,8 +257,24 @@ fn generate_message_encode(message_type: &MessageType) -> Result<()> {
     Ok(())
 }
 
+/// Generate implementation of the Randomize trait for the message
+fn generate_message_impl_randomize(message_type: &MessageType) -> Result<()> {
+    println!("impl Randomize<{0}> for {0} {{", message_type.identifier);
+    println!("    fn randomized() -> {} {{", message_type.identifier);
+    println!("        Self {{");
+    for (_, field) in message_type.fields.iter() {
+        let rust_type = field_to_rust_type(&field.qualifier, &field.field_type);
+        println!("            {}: randomized::<{rust_type}>(),", field.identifier);
+    }
+    println!("        }}");
+    println!("    }}");
+    println!("}}");
+    Ok(())
+}
+
 fn generate_messages(message_types: &HashMap<String, MessageType>) -> Result<()> {
     for (_, message_type) in message_types.iter() {
+        println!("#[derive(Default, Debug)]");
         println!("pub struct {} {{", message_type.identifier);
         for (_, field) in message_type.fields.iter() {
             println!(
@@ -264,6 +288,7 @@ fn generate_messages(message_types: &HashMap<String, MessageType>) -> Result<()>
         // TODO: impl decoder
 
         generate_message_encode(message_type)?;
+        generate_message_impl_randomize(message_type)?;
     }
     Ok(())
 }
@@ -272,6 +297,7 @@ fn generate_imports() {
     println!("use picopb::common::*;");
     println!("use picopb::encode::ToWire;");
     println!("use picopb::encode::Encode;");
+    println!("use picopb::randomizer::{{randomized, Randomize}};");
     println!("use std::ops::Deref;");
 }
 

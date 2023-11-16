@@ -14,7 +14,10 @@ use pest::{
 /// It is implemented using pest
 use pest_derive::Parser;
 
-use crate::common::{EnumType, FieldQualifier, Field, FieldType, MessageField, MessageType, Version, FieldOption, FieldOptions};
+use crate::common::{
+    EnumType, Field, FieldOption, FieldOptions, FieldQualifier, FieldType, MessageField,
+    MessageType, Version,
+};
 
 #[derive(Parser, Debug)]
 #[grammar = "parser.pest"] // relative to src
@@ -29,13 +32,21 @@ pub struct StaticSpan {
 
 impl From<&Span<'_>> for StaticSpan {
     fn from(span: &Span<'_>) -> Self {
-        Self { start: span.start(), end: span.end(), string: span.as_str().to_string() }
+        Self {
+            start: span.start(),
+            end: span.end(),
+            string: span.as_str().to_string(),
+        }
     }
 }
 
 impl From<Span<'_>> for StaticSpan {
     fn from(span: Span<'_>) -> Self {
-        Self { start: span.start(), end: span.end(), string: span.as_str().to_string() }
+        Self {
+            start: span.start(),
+            end: span.end(),
+            string: span.as_str().to_string(),
+        }
     }
 }
 
@@ -49,14 +60,14 @@ pub enum ParserError {
     ImportMustBeNonEmpty(StaticSpan),
     ExpectedOption(StaticSpan),
     ExpectedNonempty(StaticSpan),
-    ExpectedPredicateMatchButGot(StaticSpan,Rule),
-    ExpectedRule(StaticSpan,Rule),
-    ExpectedRuleButGot(StaticSpan,Rule, Rule),
+    ExpectedPredicateMatchButGot(StaticSpan, Rule),
+    ExpectedRule(StaticSpan, Rule),
+    ExpectedRuleButGot(StaticSpan, Rule, Rule),
     ExpectedOptionValue,
-    UnknownOption(StaticSpan,String),
+    UnknownOption(StaticSpan, String),
     PestRuleError(PestError<Rule>),
-    ParseIntError(StaticSpan,ParseIntError),
-    ExpectedButGot(StaticSpan,String, String),
+    ParseIntError(StaticSpan, ParseIntError),
+    ExpectedButGot(StaticSpan, String, String),
 }
 
 impl From<PestError<Rule>> for ParserError {
@@ -76,29 +87,53 @@ pub struct ProtoParser {
 type ParseResult = Result<ProtoParser, ParserError>;
 type EmptyParseResult = Result<(), ParserError>;
 
-
 impl ProtoParser {
     fn usize_from_str(span: Span<'_>, s: &str) -> Result<usize, ParserError> {
         str::parse::<usize>(s).map_err(|err| ParserError::ParseIntError(span.into(), err))
     }
 
-    fn expect_rule<'a>(&mut self, pair: PestPair<'a, Rule>, rule: Rule) -> Result<PestPair<'a, Rule>, ParserError> {
+    fn expect_rule<'a>(
+        &mut self,
+        pair: PestPair<'a, Rule>,
+        rule: Rule,
+    ) -> Result<PestPair<'a, Rule>, ParserError> {
         if pair.as_rule() == rule {
-            return Ok(pair)
+            return Ok(pair);
         }
-        return Err(ParserError::ExpectedRuleButGot(pair.as_span().into(), rule, pair.as_rule()))
+        return Err(ParserError::ExpectedRuleButGot(
+            pair.as_span().into(),
+            rule,
+            pair.as_rule(),
+        ));
     }
 
-    fn expect_next_rule<'a>(&mut self, span: Span<'_>, pairs: &mut PestPairs<'a, Rule>, rule: Rule) -> Result<PestPair<'a, Rule>, ParserError> {
-        let value = pairs.next().ok_or(ParserError::ExpectedRule(span.into(), rule))?;
+    fn expect_next_rule<'a>(
+        &mut self,
+        span: Span<'_>,
+        pairs: &mut PestPairs<'a, Rule>,
+        rule: Rule,
+    ) -> Result<PestPair<'a, Rule>, ParserError> {
+        let value = pairs
+            .next()
+            .ok_or(ParserError::ExpectedRule(span.into(), rule))?;
         self.expect_rule(value, rule)
     }
 
-    fn expect_next_match<'a>(&mut self, span: Span<'_>, pairs: &mut PestPairs<'a, Rule>, predicate: impl Fn(&PestPair<'_, Rule>) -> bool) -> Result<PestPair<'a, Rule>, ParserError> {
-        let value = pairs.next().ok_or_else(|| ParserError::ExpectedNonempty(span.into()))?;
+    fn expect_next_match<'a>(
+        &mut self,
+        span: Span<'_>,
+        pairs: &mut PestPairs<'a, Rule>,
+        predicate: impl Fn(&PestPair<'_, Rule>) -> bool,
+    ) -> Result<PestPair<'a, Rule>, ParserError> {
+        let value = pairs
+            .next()
+            .ok_or_else(|| ParserError::ExpectedNonempty(span.into()))?;
         match predicate(&value) {
             true => Ok(value),
-            false => Err(ParserError::ExpectedPredicateMatchButGot(value.as_span().into(), value.as_rule()))
+            false => Err(ParserError::ExpectedPredicateMatchButGot(
+                value.as_span().into(),
+                value.as_rule(),
+            )),
         }
     }
 
@@ -106,7 +141,6 @@ impl ProtoParser {
         &mut self,
         option_statement: PestPair<'_, Rule>,
     ) -> Result<FieldOption, ParserError> {
-
         let option = self.expect_rule(option_statement, Rule::nanopb_option)?;
         let option_span = option.as_span();
         let mut inner = option.into_inner();
@@ -121,11 +155,23 @@ impl ProtoParser {
         // dbg!(variant_span);
 
         let number_value = self.expect_next_rule(option_span, &mut inner, Rule::number)?;
-        
+
         match variant_rule {
-            Rule::max_size_option => Ok(FieldOption::MaxSize(Self::usize_from_str(variant_span.into(), number_value.as_str())?)),
-            Rule::max_len_option => Ok(FieldOption::MaxLen(Self::usize_from_str(variant_span.into(), number_value.as_str())?)),
-            _ => return Err(ParserError::ExpectedButGot(variant_span.into(), "max_size_option or max_len_option".into(), "ERR".into())),
+            Rule::max_size_option => Ok(FieldOption::MaxSize(Self::usize_from_str(
+                variant_span.into(),
+                number_value.as_str(),
+            )?)),
+            Rule::max_len_option => Ok(FieldOption::MaxLen(Self::usize_from_str(
+                variant_span.into(),
+                number_value.as_str(),
+            )?)),
+            _ => {
+                return Err(ParserError::ExpectedButGot(
+                    variant_span.into(),
+                    "max_size_option or max_len_option".into(),
+                    "ERR".into(),
+                ))
+            }
         }
     }
 
@@ -140,9 +186,15 @@ impl ProtoParser {
         let packed_bool = self.expect_next_rule(option_span, &mut inner, Rule::bool)?;
 
         match packed_bool.as_str() {
-            "true" => Ok(FieldOption::Packed(true)), 
-            "false" => Ok(FieldOption::Packed(false)), 
-            s => return Err(ParserError::ExpectedButGot(packed_bool.as_span().into(), "bool".into(), s.to_string())),
+            "true" => Ok(FieldOption::Packed(true)),
+            "false" => Ok(FieldOption::Packed(false)),
+            s => {
+                return Err(ParserError::ExpectedButGot(
+                    packed_bool.as_span().into(),
+                    "bool".into(),
+                    s.to_string(),
+                ))
+            }
         }
     }
 
@@ -156,7 +208,7 @@ impl ProtoParser {
 
         let mut option_inner = option.into_inner();
 
-        let option_variant = self.expect_next_match(span,&mut option_inner, |pair| {
+        let option_variant = self.expect_next_match(span, &mut option_inner, |pair| {
             let rule = pair.as_rule();
             rule == Rule::nanopb_option || rule == Rule::packed_option
         })?;
@@ -164,21 +216,28 @@ impl ProtoParser {
         match option_variant.as_rule() {
             Rule::nanopb_option => return self.parse_nanopb_option(option_variant),
             Rule::packed_option => return self.parse_packed_option(option_variant),
-            _ => return Err(ParserError::ExpectedButGot(option_variant.as_span().into(), "nanopb_option or packed_option".into(), format!("{}", option_variant))),
+            _ => {
+                return Err(ParserError::ExpectedButGot(
+                    option_variant.as_span().into(),
+                    "nanopb_option or packed_option".into(),
+                    format!("{}", option_variant),
+                ))
+            }
         }
     }
 
-    /// parse_options parses the list of options that can be specified 
+    /// parse_options parses the list of options that can be specified
     /// Example: [(nanopb).max_size=<value>,packed=true]
     fn parse_options(
         &mut self,
         options_statement: PestPair<'_, Rule>,
     ) -> Result<Vec<FieldOption>, ParserError> {
         let options = self.expect_rule(options_statement, Rule::options)?;
-        options.into_inner()
-                .into_iter()
-                .map(|option| self.parse_option(option))
-                .collect()
+        options
+            .into_inner()
+            .into_iter()
+            .map(|option| self.parse_option(option))
+            .collect()
     }
 
     fn parse_message_definition(
@@ -190,7 +249,8 @@ impl ProtoParser {
 
         let mut inner = message_statement.into_inner();
 
-        let identifier = inner.next().ok_or(ParserError::ExpectedButGot(span.into(),
+        let identifier = inner.next().ok_or(ParserError::ExpectedButGot(
+            span.into(),
             "identifier".to_string(),
             "None".to_string(),
         ))?;
@@ -207,10 +267,23 @@ impl ProtoParser {
                 Rule::message_field => {
                     let mut message_inner = value.into_inner();
 
-                    let qualifier = self.expect_next_rule(value_span.into(), &mut message_inner, Rule::qualifier)?;
-                    let field_type = self.expect_next_rule(value_span.into(), &mut message_inner, Rule::field_type)?;
-                    let identifier = self.expect_next_rule(value_span.into(), &mut message_inner, Rule::identifier)?;
-                    let field_number = self.expect_next_rule(value_span.into(), &mut message_inner, Rule::number)?;
+                    let qualifier = self.expect_next_rule(
+                        value_span.into(),
+                        &mut message_inner,
+                        Rule::qualifier,
+                    )?;
+                    let field_type = self.expect_next_rule(
+                        value_span.into(),
+                        &mut message_inner,
+                        Rule::field_type,
+                    )?;
+                    let identifier = self.expect_next_rule(
+                        value_span.into(),
+                        &mut message_inner,
+                        Rule::identifier,
+                    )?;
+                    let field_number =
+                        self.expect_next_rule(value_span.into(), &mut message_inner, Rule::number)?;
 
                     // TODO:
                     let mut options = FieldOptions {
@@ -223,12 +296,10 @@ impl ProtoParser {
                     if let Some(next) = message_inner.next() {
                         // dbg!(&next);
                         let opts = self.parse_options(next)?;
-                        opts.iter().for_each(|option| {
-                            match option {
-                                FieldOption::MaxLen(max_len) => options.max_len = Some(*max_len),
-                                FieldOption::MaxSize(max_size) => options.max_size = Some(*max_size),
-                                FieldOption::Packed(value) => options.packed = *value,
-                            }
+                        opts.iter().for_each(|option| match option {
+                            FieldOption::MaxLen(max_len) => options.max_len = Some(*max_len),
+                            FieldOption::MaxSize(max_size) => options.max_size = Some(*max_size),
+                            FieldOption::Packed(value) => options.packed = *value,
                         });
                     }
 
@@ -290,8 +361,13 @@ impl ProtoParser {
                 Rule::enum_field => {
                     let mut enum_inner = value.into_inner();
 
-                    let identifier = self.expect_next_rule(value_span.into(), &mut enum_inner, Rule::identifier)?;
-                    let number = self.expect_next_rule(value_span.into(), &mut enum_inner, Rule::number)?;
+                    let identifier = self.expect_next_rule(
+                        value_span.into(),
+                        &mut enum_inner,
+                        Rule::identifier,
+                    )?;
+                    let number =
+                        self.expect_next_rule(value_span.into(), &mut enum_inner, Rule::number)?;
 
                     let field_identifier = Self::identifier_from_span(identifier.as_span());
                     let field_ordinal = Self::ordinal_from_span(number.as_span())?;
@@ -371,7 +447,10 @@ impl ProtoParser {
             _ => Err(ParserError::ExpectedButGot(
                 span.into(),
                 "block statement".to_string(),
-                statement_variant.as_node_tag().unwrap_or("<unknown>").to_string(),
+                statement_variant
+                    .as_node_tag()
+                    .unwrap_or("<unknown>")
+                    .to_string(),
             )),
         }?;
         Ok(())

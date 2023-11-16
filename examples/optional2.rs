@@ -1,6 +1,6 @@
 use picopb::common::*;
-use picopb::encode::ToWire;
 use picopb::encode::Encode;
+use picopb::encode::ToWire;
 use picopb::randomizer::{randomized, Randomize};
 use std::ops::Deref;
 #[derive(Default, Debug)]
@@ -15,26 +15,27 @@ pub struct MessageWithOptionalFieldFieldsType {
     pub b: picopb::common::ConstMessageField,
     pub e: picopb::common::ConstMessageField,
 }
-const MESSAGE_WITH_OPTIONAL_FIELD_FIELDS: MessageWithOptionalFieldFieldsType = MessageWithOptionalFieldFieldsType {
-    a: picopb::common::ConstMessageField {
-        qualifier: picopb::common::FieldQualifier::Optional,
-        field_type: picopb::common::FieldType::UnboundedString,
-        identifier: "a",
-        ordinal: picopb::common::Field(1),
-    },
-    b: picopb::common::ConstMessageField {
-        qualifier: picopb::common::FieldQualifier::RepeatedUnbounded,
-        field_type: picopb::common::FieldType::UnboundedString,
-        identifier: "b",
-        ordinal: picopb::common::Field(4),
-    },
-    e: picopb::common::ConstMessageField {
-        qualifier: picopb::common::FieldQualifier::RepeatedUnbounded,
-        field_type: picopb::common::FieldType::Int32,
-        identifier: "e",
-        ordinal: picopb::common::Field(5),
-    },
-};
+const MESSAGE_WITH_OPTIONAL_FIELD_FIELDS: MessageWithOptionalFieldFieldsType =
+    MessageWithOptionalFieldFieldsType {
+        a: picopb::common::ConstMessageField {
+            qualifier: picopb::common::FieldQualifier::Optional,
+            field_type: picopb::common::FieldType::UnboundedString,
+            identifier: "a",
+            ordinal: picopb::common::Field(1),
+        },
+        b: picopb::common::ConstMessageField {
+            qualifier: picopb::common::FieldQualifier::RepeatedUnbounded,
+            field_type: picopb::common::FieldType::UnboundedString,
+            identifier: "b",
+            ordinal: picopb::common::Field(4),
+        },
+        e: picopb::common::ConstMessageField {
+            qualifier: picopb::common::FieldQualifier::RepeatedUnbounded,
+            field_type: picopb::common::FieldType::Int32,
+            identifier: "e",
+            ordinal: picopb::common::Field(5),
+        },
+    };
 impl MessageWithOptionalField {
     fn fields(&self) -> MessageWithOptionalFieldFieldsType {
         MESSAGE_WITH_OPTIONAL_FIELD_FIELDS
@@ -70,13 +71,12 @@ impl Randomize<MessageWithOptionalField> for MessageWithOptionalField {
     }
 }
 
-
-use std::io::Write;
-use std::io;
 use bytes::Bytes;
+use std::io;
+use std::io::Write;
 fn main() {
     let message = MessageWithOptionalField::randomized();
-    let mut static_buffer: [u8; 512*1024] = [0; 512*1024];
+    let mut static_buffer: [u8; 512 * 1024] = [0; 512 * 1024];
     let mut buffer = picopb::encode::EncodeBuffer::from_static(&mut static_buffer);
     (&message).encode(&mut buffer).expect("not error");
 

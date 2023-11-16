@@ -1,8 +1,8 @@
-pub mod parser;
-pub mod generator;
-pub mod validator;
-pub mod encode;
-pub mod decode;
 pub mod common;
-pub mod wiretypes;
+pub mod decode;
+pub mod encode;
+pub mod generator;
+pub mod parser;
 pub mod randomizer;
+pub mod validator;
+pub mod wiretypes;

@@ -1,8 +1,8 @@
 use std::process::Stdio;
 
 use picopb::common::*;
-use picopb::encode::ToWire;
 use picopb::encode::Encode;
+use picopb::encode::ToWire;
 pub enum Error {
     ErrorInvalidKey,
     ErrorNotFound,
@@ -67,10 +67,13 @@ impl picopb::encode::Encode for &Query {
     }
 }
 
-use std::io::Write;
 use std::io;
+use std::io::Write;
 fn main() {
-    let q = Query { key: [b'A'; 8], opaque: [b'B'; 8]};
+    let q = Query {
+        key: [b'A'; 8],
+        opaque: [b'B'; 8],
+    };
     let mut static_buffer: [u8; 512] = [0; 512];
     let mut buffer = picopb::encode::EncodeBuffer::from_static(&mut static_buffer);
     (&q).encode(&mut buffer).expect("not error");

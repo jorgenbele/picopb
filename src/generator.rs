@@ -1,10 +1,9 @@
 /// This module contains the code generator
-use crate::common::{EnumType, FieldQualifier, FieldType, MessageType, MessageField, Identifier};
+use crate::common::{EnumType, FieldQualifier, FieldType, Identifier, MessageField, MessageType};
 use crate::parser::ProtoParser;
 /// It takes the parsed result and creates rust code from the input
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
-
 
 #[derive(Debug)]
 pub enum GeneratorError {
@@ -57,7 +56,7 @@ fn field_to_rust_type(qualifier: &FieldQualifier, field_type: &FieldType) -> Str
                 field_to_rust_type(&FieldQualifier::Required, field_type),
                 limit
             )
-        },
+        }
 
         (FieldQualifier::PackedRepeatedUnbounded, field_type) => {
             format!(
@@ -153,29 +152,46 @@ fn generate_message_metadata(message_type: &MessageType) -> Result<()> {
     println!("#[derive(Debug)]");
     println!("pub struct {}FieldsType {{", message_type.identifier);
     for (_, field) in message_type.fields.iter() {
-        println!("    pub {}: picopb::common::ConstMessageField,", field.identifier);
+        println!(
+            "    pub {}: picopb::common::ConstMessageField,",
+            field.identifier
+        );
     }
     println!("}}");
 
-    // generate const struct that fills that struct 
-    println!("const {}_FIELDS: {}FieldsType = {}FieldsType {{", message_type_identifier, message_type.identifier, message_type.identifier);
+    // generate const struct that fills that struct
+    println!(
+        "const {}_FIELDS: {}FieldsType = {}FieldsType {{",
+        message_type_identifier, message_type.identifier, message_type.identifier
+    );
     for (_, field) in message_type.fields.iter() {
-        println!("    {}: picopb::common::ConstMessageField {{", field.identifier);
+        println!(
+            "    {}: picopb::common::ConstMessageField {{",
+            field.identifier
+        );
         println!("        qualifier: {},", field.qualifier.repr());
         println!("        field_type: {},", field.field_type.repr());
         println!("        identifier: \"{}\",", field.identifier);
-        println!("        ordinal: picopb::common::Field({}),", field.ordinal.0);
+        println!(
+            "        ordinal: picopb::common::Field({}),",
+            field.ordinal.0
+        );
         println!("    }},");
     }
     println!("}};");
 
     // impl self::fields() that returns the fields type
     println!("impl {} {{", message_type.identifier);
-    println!("    fn fields(&self) -> {}FieldsType {{", message_type.identifier);
-    println!("        {}_FIELDS", identifier_to_const_case(message_type.identifier.as_str())?);
+    println!(
+        "    fn fields(&self) -> {}FieldsType {{",
+        message_type.identifier
+    );
+    println!(
+        "        {}_FIELDS",
+        identifier_to_const_case(message_type.identifier.as_str())?
+    );
     println!("    }}");
     println!("}}");
-
 
     Ok(())
 }
@@ -184,10 +200,12 @@ fn as_encodable_type(field: &MessageField, prefix: &str) -> String {
     let identifier = &field.identifier;
 
     let wrapped = match field.qualifier {
-        FieldQualifier::Repeated(_) | FieldQualifier::PackedRepeated(_) 
-            => return format!("{prefix}{identifier}"),
-        FieldQualifier::PackedRepeatedUnbounded | FieldQualifier::RepeatedUnbounded 
-            => return format!("{prefix}{identifier}.as_slice()"),
+        FieldQualifier::Repeated(_) | FieldQualifier::PackedRepeated(_) => {
+            return format!("{prefix}{identifier}")
+        }
+        FieldQualifier::PackedRepeatedUnbounded | FieldQualifier::RepeatedUnbounded => {
+            return format!("{prefix}{identifier}.as_slice()")
+        }
         _ => format!("{prefix}{identifier}"),
     };
 
@@ -199,13 +217,22 @@ fn as_encodable_type(field: &MessageField, prefix: &str) -> String {
         FieldType::EnumType(_) => todo!(),
         FieldType::MessageType(_, _) => todo!(),
         FieldType::UnboundedMessageType(_) => todo!(),
-        FieldType::Bool | FieldType::Int32 | FieldType::Int64 | FieldType::Uint32 | FieldType::Uint64  => format!("{wrapped}"),
+        FieldType::Bool
+        | FieldType::Int32
+        | FieldType::Int64
+        | FieldType::Uint32
+        | FieldType::Uint64 => format!("{wrapped}"),
     }
 }
 
 fn generate_message_encode(message_type: &MessageType) -> Result<()> {
-    println!("impl picopb::encode::Encode for &{} {{", message_type.identifier);
-    println!("    fn encode(&self, buf: &mut picopb::encode::EncodeBuffer) -> std::io::Result<usize> {{");
+    println!(
+        "impl picopb::encode::Encode for &{} {{",
+        message_type.identifier
+    );
+    println!(
+        "    fn encode(&self, buf: &mut picopb::encode::EncodeBuffer) -> std::io::Result<usize> {{"
+    );
     println!("        let mut total_size = 0;");
     for (_, field) in message_type.fields.iter() {
         let identifier = &field.identifier;
@@ -217,7 +244,7 @@ fn generate_message_encode(message_type: &MessageType) -> Result<()> {
                 println!("        if let Some(value_{identifier}) = &self.{identifier} {{");
                 println!("            total_size += buf.encode({value_encodable_type}, self.fields().{identifier}.ordinal)?;");
                 println!("        }}");
-            },
+            }
             _ => {
                 let self_encodable_type = as_encodable_type(field, "self.");
                 dbg!(&self_encodable_type);
@@ -243,12 +270,11 @@ fn generate_message_encode(message_type: &MessageType) -> Result<()> {
                 println!("        if let Some(value_{identifier}) = &self.{identifier} {{");
                 println!("            total_size += value_{encodable_type}.precalculate_size();");
                 println!("        }}");
-            },
+            }
             _ => {
                 println!("        total_size += {self_encodable_type}.precalculate_size();");
             }
         }
-
     }
     println!("        total_size");
     println!("    }}");
@@ -264,7 +290,10 @@ fn generate_message_impl_randomize(message_type: &MessageType) -> Result<()> {
     println!("        Self {{");
     for (_, field) in message_type.fields.iter() {
         let rust_type = field_to_rust_type(&field.qualifier, &field.field_type);
-        println!("            {}: randomized::<{rust_type}>(),", field.identifier);
+        println!(
+            "            {}: randomized::<{rust_type}>(),",
+            field.identifier
+        );
     }
     println!("        }}");
     println!("    }}");

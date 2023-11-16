@@ -1,6 +1,6 @@
 use picopb::common::*;
-use picopb::encode::ToWire;
 use picopb::encode::Encode;
+use picopb::encode::ToWire;
 use picopb::randomizer::{randomized, Randomize};
 use std::ops::Deref;
 #[derive(Default, Debug)]
@@ -84,7 +84,7 @@ use std::io::Write;
 fn main() {
     (0..1000).for_each(|_| {
         let q = Query::randomized();
-        let mut static_buffer: [u8; 20*10000] = [0; 20*10000];
+        let mut static_buffer: [u8; 20 * 10000] = [0; 20 * 10000];
         let mut buffer = picopb::encode::EncodeBuffer::from_static(&mut static_buffer);
         (&q).encode(&mut buffer).expect("not error");
         std::io::stdout().write_all(buffer.as_slice()).unwrap();

@@ -1,8 +1,4 @@
-use picopb::{
-    generator::generate,
-    parser::parse,
-    validator::validate,
-};
+use picopb::{generator::generate, parser::parse, validator::validate};
 
 fn main() {
     let result = parse(

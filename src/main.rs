@@ -1,5 +1,5 @@
-use std::fs::read_to_string;
 use clap::Parser;
+use std::fs::read_to_string;
 // use pest::Parser;
 use picopb::{
     generator::generate,
@@ -74,23 +74,22 @@ fn main() {
 
     // println!("{}", example_proto2);
     // PicoPBParser::parse(Rule::proto_definition, example_proto2).unwrap();
-        // message Response {
-        //     required bytes value = 1; [(nanopb).max_size=64]
-        //     required bytes opaque = 2;
-        //     optional Error error = 3;
-        // }
+    // message Response {
+    //     required bytes value = 1; [(nanopb).max_size=64]
+    //     required bytes opaque = 2;
+    //     optional Error error = 3;
+    // }
 
-        // message RepeatedResponse {
-        //     repeated Response responses = 1; [(nanopb).max_size=64]
-        // }
+    // message RepeatedResponse {
+    //     repeated Response responses = 1; [(nanopb).max_size=64]
+    // }
 
-        // message PackedIntegers {
-        //     repeated int32 integers = 1; [packed=true, (nanopb).max_size=64]
-        // }
+    // message PackedIntegers {
+    //     repeated int32 integers = 1; [packed=true, (nanopb).max_size=64]
+    // }
 
-        // import \"common.proto\";
-        // import \"shared.proto\";
-
+    // import \"common.proto\";
+    // import \"shared.proto\";
 
     // let result = parse(
     //     "
@@ -111,7 +110,6 @@ fn main() {
     // dbg!(&result);
     // validate(&result).unwrap();
     // generate(&result).unwrap();
-
 }
 
 #[cfg(test)]

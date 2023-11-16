@@ -1,5 +1,5 @@
+use crate::common::{Field, Packed};
 use crate::encode::ToWire;
-use crate::common::{Packed, Field};
 
 /// This file contains the predefine wiretypes for the types where this is applicable
 /// TODO: ZigZag encoding of signed types
@@ -9,7 +9,6 @@ pub struct Tag(pub u32);
 pub trait ToVarint {
     fn to_varint_encoding(&self) -> ([u8; 10], usize);
 }
-
 
 impl ToVarint for u32 {
     fn to_varint_encoding(&self) -> ([u8; 10], usize) {
@@ -69,7 +68,7 @@ pub enum WireType {
     SGroup,
     EGroup,
     I32,
-    Len
+    Len,
 }
 
 #[derive(Debug)]
@@ -94,7 +93,7 @@ impl TryFrom<u32> for WireType {
             SGROUP_ID => Ok(WireType::SGroup),
             EGROUP_ID => Ok(WireType::EGroup),
             I32_ID => Ok(WireType::I32),
-            _ => Err(WireTypeError::InvalidTag(value))
+            _ => Err(WireTypeError::InvalidTag(value)),
         }
     }
 }
@@ -103,7 +102,7 @@ impl WireType {
     fn to_id(&self) -> WireTypeId {
         match self {
             WireType::VarInt => WireTypeId(VARINT_ID),
-            WireType::I64 => WireTypeId(I64_ID),   
+            WireType::I64 => WireTypeId(I64_ID),
             WireType::Len => WireTypeId(LEN_ID),
             WireType::SGroup => WireTypeId(SGROUP_ID),
             WireType::EGroup => WireTypeId(EGROUP_ID),
@@ -119,7 +118,6 @@ pub trait WireTyped {
     fn tag(&self, field: Field) -> Tag {
         Tag((field.0 << 3) | self.wiretype().to_id().0)
     }
-
 }
 
 /// When using packed mode the length is prefixed to repeated messages
@@ -161,8 +159,9 @@ impl WireTyped for String {
     }
 }
 
-impl<T> WireTyped for &[T] 
-    where T: WireTyped
+impl<T> WireTyped for &[T]
+where
+    T: WireTyped,
 {
     fn wiretype(&self) -> WireType {
         WireType::Len

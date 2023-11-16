@@ -5,6 +5,7 @@ use crate::parser::ProtoParser;
 use convert_case::{Case, Casing};
 use std::collections::HashMap;
 
+
 #[derive(Debug)]
 pub enum GeneratorError {
     InvalidProtoVersion,
@@ -184,7 +185,7 @@ fn as_encodable_type(field: &MessageField, prefix: &str) -> String {
 
     match field.field_type {
         FieldType::UnboundedString => format!("{wrapped}.as_str()"),
-        FieldType::UnboundedBytes => todo!(),
+        FieldType::UnboundedBytes => format!("{wrapped}.deref()"),
         FieldType::String(_) => format!("{wrapped}.as_slice()"),
         FieldType::Bytes(_) => format!("{wrapped}.as_bytes()"),
         FieldType::EnumType(_) => todo!(),
@@ -211,12 +212,10 @@ fn generate_message_encode(message_type: &MessageType) -> Result<()> {
             },
             _ => {
                 let self_encodable_type = as_encodable_type(field, "self.");
+                dbg!(&self_encodable_type);
                 println!("        total_size += buf.encode({self_encodable_type}, self.fields().{identifier}.ordinal)?;");
             }
         }
-
-
-
     }
     println!("        Ok(total_size)");
     println!("    }}");
@@ -227,6 +226,7 @@ fn generate_message_encode(message_type: &MessageType) -> Result<()> {
         let encodable_type = as_encodable_type(field, "");
         let self_encodable_type = as_encodable_type(field, "self.");
         let identifier = &field.identifier;
+        dbg!(&self_encodable_type);
 
         // We don't want to encode empty optional values
         // and therefore should not count them towards the size
@@ -263,7 +263,6 @@ fn generate_messages(message_types: &HashMap<String, MessageType>) -> Result<()>
         generate_message_metadata(message_type)?;
         // TODO: impl decoder
 
-        // TODO: impl encoder
         generate_message_encode(message_type)?;
     }
     Ok(())
@@ -273,6 +272,7 @@ fn generate_imports() {
     println!("use picopb::common::*;");
     println!("use picopb::encode::ToWire;");
     println!("use picopb::encode::Encode;");
+    println!("use std::ops::Deref;");
 }
 
 pub fn generate(parser: &ProtoParser) -> Result<()> {

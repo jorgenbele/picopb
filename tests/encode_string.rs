@@ -1,5 +1,5 @@
 use picopb::encode::EncodeBuffer;
-use picopb::wiretypes::Field;
+use picopb::common::Field;
 
 #[test]
 fn encode_string_testing() {

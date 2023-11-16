@@ -1,5 +1,5 @@
-use picopb::encode::{write_prefix, EncodeBuffer};
-use picopb::wiretypes::Field;
+use picopb::encode::EncodeBuffer;
+use picopb::common::Field;
 
 #[test]
 fn encode_person_simple() {

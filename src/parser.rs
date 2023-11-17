@@ -76,22 +76,22 @@ impl From<PestError<Rule>> for ParserError {
 }
 
 #[derive(Debug)]
-pub struct ProtoParser {
+pub struct ProtoParser<'a> {
     pub version: Version,
     pub imports: Vec<String>,
     pub enum_types: HashMap<String, EnumType>,
-    pub message_types: HashMap<String, MessageType>,
+    pub message_types: HashMap<String, MessageType<'a>>,
 }
 
-pub type ParseResult = Result<ProtoParser, ParserError>;
+pub type ParseResult<'a> = Result<ProtoParser<'a>, ParserError>;
 pub type EmptyParseResult = Result<(), ParserError>;
 
-impl ProtoParser {
+impl<'a> ProtoParser<'a> {
     fn usize_from_str(span: Span<'_>, s: &str) -> Result<usize, ParserError> {
         str::parse::<usize>(s).map_err(|err| ParserError::ParseIntError(span.into(), err))
     }
 
-    fn expect_rule<'a>(
+    fn expect_rule(
         &mut self,
         pair: PestPair<'a, Rule>,
         rule: Rule,
@@ -106,7 +106,7 @@ impl ProtoParser {
         ));
     }
 
-    fn expect_next_rule<'a>(
+    fn expect_next_rule(
         &mut self,
         span: Span<'_>,
         pairs: &mut PestPairs<'a, Rule>,
@@ -118,7 +118,7 @@ impl ProtoParser {
         self.expect_rule(value, rule)
     }
 
-    fn expect_next_match<'a>(
+    fn expect_next_match(
         &mut self,
         span: Span<'_>,
         pairs: &mut PestPairs<'a, Rule>,
@@ -138,7 +138,7 @@ impl ProtoParser {
 
     fn parse_nanopb_option(
         &mut self,
-        option_statement: PestPair<'_, Rule>,
+        option_statement: PestPair<'a, Rule>,
     ) -> Result<FieldOption, ParserError> {
         let option = self.expect_rule(option_statement, Rule::nanopb_option)?;
         let option_span = option.as_span();
@@ -174,7 +174,7 @@ impl ProtoParser {
 
     fn parse_packed_option(
         &mut self,
-        option_statement: PestPair<'_, Rule>,
+        option_statement: PestPair<'a, Rule>,
     ) -> Result<FieldOption, ParserError> {
         let option = self.expect_rule(option_statement, Rule::packed_option)?;
         let option_span = option.as_span();
@@ -198,7 +198,7 @@ impl ProtoParser {
     /// parse_option parses a single option
     fn parse_option(
         &mut self,
-        option_statement: PestPair<'_, Rule>,
+        option_statement: PestPair<'a, Rule>,
     ) -> Result<FieldOption, ParserError> {
         let option = self.expect_rule(option_statement, Rule::option)?;
         let span = option.as_span();
@@ -227,7 +227,7 @@ impl ProtoParser {
     /// Example: [(nanopb).max_size=<value>,packed=true]
     fn parse_options(
         &mut self,
-        options_statement: PestPair<'_, Rule>,
+        options_statement: PestPair<'a, Rule>,
     ) -> Result<Vec<FieldOption>, ParserError> {
         let options = self.expect_rule(options_statement, Rule::options)?;
         options
@@ -238,7 +238,7 @@ impl ProtoParser {
 
     fn parse_message_definition(
         &mut self,
-        message_statement: PestPair<'_, Rule>,
+        message_statement: PestPair<'a, Rule>,
     ) -> EmptyParseResult {
         let span = message_statement.as_span();
         // dbg!(&message_statement);
@@ -290,7 +290,7 @@ impl ProtoParser {
                         });
                     }
 
-                    let field_identifier = Self::identifier_from_span(identifier.as_span());
+                    let field_identifier: String = Self::identifier_from_span(identifier.as_span());
                     let field_ordinal = Self::ordinal_from_span(field_number.as_span())?;
 
                     let value = MessageField {
@@ -325,7 +325,7 @@ impl ProtoParser {
         parse_result.map_err(|err| ParserError::ParseIntError(span.into(), err))
     }
 
-    fn parse_enum_definition(&mut self, enum_statement: PestPair<'_, Rule>) -> EmptyParseResult {
+    fn parse_enum_definition(&mut self, enum_statement: PestPair<'a, Rule>) -> EmptyParseResult {
         let span = enum_statement.as_span();
 
         let mut inner = enum_statement.into_inner();
@@ -365,7 +365,7 @@ impl ProtoParser {
         Ok(())
     }
 
-    fn parse_block_statement(&mut self, statement: PestPair<'_, Rule>) -> EmptyParseResult {
+    fn parse_block_statement(&mut self, statement: PestPair<'a, Rule>) -> EmptyParseResult {
         let block_statement = self.expect_rule(statement, Rule::block_statement)?;
         let span = block_statement.as_span();
         let mut inner = block_statement.into_inner();
@@ -415,7 +415,7 @@ impl ProtoParser {
         Err(ParserError::InvalidVersionDeclaration(span.into()))
     }
 
-    fn parse_statement(&mut self, statement: PestPair<'_, Rule>) -> EmptyParseResult {
+    fn parse_statement(&mut self, statement: PestPair<'a, Rule>) -> EmptyParseResult {
         let span = statement.as_span();
         let statement = self.expect_rule(statement, Rule::statement)?;
         let mut statement_inner = statement.into_inner();
@@ -486,9 +486,8 @@ pub fn parse(input: &str) -> ParseResult {
         let mut new_message_type = message_type.clone();
 
         for (ordinal, field) in message_type.fields {
-            match &field.field_type {
-                FieldType::MessageType(identifier, _)
-                | FieldType::UnboundedMessageType(identifier) => {
+            match field.field_type {
+                FieldType::MessageType(identifier) => {
                     if output.enum_types.contains_key(identifier) {
                         // this field has a type that we now know is a Enum (not a Message)
                         let mut new_field = field.clone();

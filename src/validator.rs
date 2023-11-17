@@ -19,17 +19,16 @@ pub fn validate(parser: &ProtoParser) -> Result<(), ValidatorError> {
     // create lookup table of all valid types
     let mut valid_message_types = HashSet::new();
     parser.message_types.iter().for_each(|(id, _)| {
-        valid_message_types.insert(id);
+        valid_message_types.insert(id.as_str());
     });
     parser.enum_types.iter().for_each(|(id, _)| {
-        valid_message_types.insert(id);
+        valid_message_types.insert(id.as_str());
     });
 
     for (_, message_type) in parser.message_types.iter() {
         for (_, field) in message_type.fields.iter() {
-            match &field.field_type {
-                FieldType::MessageType(identifier, _)
-                | FieldType::UnboundedMessageType(identifier) => {
+            match field.field_type {
+                FieldType::MessageType(identifier) => {
                     if !valid_message_types.contains(identifier) {
                         return Err(ValidatorError::MissingTypeDefinition(
                             identifier.to_string(),

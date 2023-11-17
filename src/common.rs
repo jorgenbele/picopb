@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 
+
 #[derive(Debug, Clone)]
-pub enum FieldType {
+pub enum FieldType<'a> {
     UnboundedString,
     UnboundedBytes,
     String(usize),
@@ -11,13 +12,13 @@ pub enum FieldType {
     Int64,
     Uint32,
     Uint64,
-    EnumType(String),
-    MessageType(String, usize),
-    UnboundedMessageType(String),
+    EnumType(&'a str),
+    MessageType(&'a str),
+    // UnboundedMessageType(String),
 }
 
-impl FieldType {
-    pub fn from_str(s: &str, max_size: Option<usize>) -> Self {
+impl<'a> FieldType<'a> {
+    pub fn from_str(s: &'a str, max_size: Option<usize>) -> Self {
         match (s, max_size) {
             ("string", None) => Self::UnboundedString,
             ("bytes", None) => Self::UnboundedBytes,
@@ -30,10 +31,11 @@ impl FieldType {
             ("uint64", _) => Self::Uint64,
             // if we don't recognize the type we assume it is a Message type
             // this will be verified later
-            (s, Some(limit)) => Self::MessageType(s.to_string(), limit),
-            (s, None) => Self::UnboundedMessageType(s.to_string()),
+            (s, None) => Self::MessageType(s),
+            (_, Some(_)) => unreachable!(),
         }
     }
+
 
     pub fn repr(&self) -> String {
         match self {
@@ -46,18 +48,9 @@ impl FieldType {
             Self::Int64 => "picopb::common::FieldType::Int64".into(),
             Self::Uint64 => "picopb::common::FieldType::Uint64".into(),
             Self::Uint32 => "picopb::common::FieldType::Uint32".into(),
-            Self::EnumType(identifier) => {
-                format!("picopb::common::FieldType::EnumType(\"{}\")", identifier)
-            }
-            Self::MessageType(identifier, size) => format!(
-                "picopb::common::FieldType::MessageType(\"{}\", {})",
-                identifier, size
-            ),
-            Self::UnboundedMessageType(identifier) => format!(
-                "picopb::common::FieldType::UnboundedMessageType(\"{}\")",
-                identifier
-            ),
-        }
+            Self::EnumType(identifier) => format!("picopb::common::FieldType::EnumType(\"{}\")", identifier),
+            Self::MessageType(identifier) => format!("picopb::common::FieldType::MessageType(\"{}\")", identifier),
+        }   
     }
 }
 
@@ -83,14 +76,10 @@ impl FieldQualifier {
             Self::Optional => "picopb::common::FieldQualifier::Optional".into(),
             Self::Required => "picopb::common::FieldQualifier::Required".into(),
             Self::RepeatedUnbounded => "picopb::common::FieldQualifier::RepeatedUnbounded".into(),
-            Self::Repeated(len) => format!("picopb::common::FieldQualifier::Repeated({})", len),
-            Self::PackedRepeated(len) => {
-                format!("picopb::common::FieldQualifier::PackedRepeated({})", len)
-            }
-            Self::PackedRepeatedUnbounded => {
-                "picopb::common::FieldQualifier::PackedRepeatedUnbounded".to_string()
-            }
-        }
+            Self::Repeated(len) => format!("picopb::common::FieldQualifier::Repeated({})", len), 
+            Self::PackedRepeated(len) => format!("picopb::common::FieldQualifier::PackedRepeated({})", len), 
+            Self::PackedRepeatedUnbounded => format!("picopb::common::FieldQualifier::PackedRepeatedUnbounded"), 
+        }   
     }
 }
 
@@ -98,14 +87,24 @@ impl FieldQualifier {
 pub enum FieldOption {
     MaxSize(usize),
     MaxLen(usize),
-    Packed(bool),
+    Packed(bool)
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct FieldOptions {
     pub max_size: Option<usize>,
     pub max_len: Option<usize>,
     pub packed: bool,
+}
+
+impl Default for FieldOptions {
+    fn default() -> Self {
+        Self {
+            max_size: None,
+            max_len: None,
+            packed: false,
+        }
+    }
 }
 
 impl FieldQualifier {
@@ -119,7 +118,7 @@ impl FieldQualifier {
                 } else {
                     Some(max_size)
                 }
-            }
+            },
             (Some(max_len), None) => Some(max_len + 1),
             (None, None) => None,
         };
@@ -133,7 +132,7 @@ impl FieldQualifier {
             ("repeated", None, false) => Self::RepeatedUnbounded,
             ("repeated", Some(limit), true) => Self::PackedRepeated(limit),
             ("repeated", None, true) => Self::PackedRepeatedUnbounded,
-            _ => unreachable!(),
+            _ => unreachable!()
         }
     }
 }
@@ -142,25 +141,25 @@ impl FieldQualifier {
 pub struct Field(pub u32);
 
 #[derive(Debug, Clone)]
-pub struct MessageField {
+pub struct MessageField<'a> {
     pub qualifier: FieldQualifier,
-    pub field_type: FieldType,
+    pub field_type: FieldType<'a>,
     pub identifier: Identifier,
     pub ordinal: Field,
 }
 
 #[derive(Debug, Clone)]
-pub struct ConstMessageField {
+pub struct ConstMessageField<'a> {
     pub qualifier: FieldQualifier,
-    pub field_type: FieldType,
+    pub field_type: FieldType<'a>,
     pub identifier: &'static str,
     pub ordinal: Field,
 }
 
 #[derive(Debug, Clone)]
-pub struct MessageType {
+pub struct MessageType<'a> {
     pub identifier: String,
-    pub fields: BTreeMap<Ordinal, MessageField>,
+    pub fields: BTreeMap<Ordinal, MessageField<'a>>,
 }
 
 #[derive(Debug)]
@@ -174,6 +173,7 @@ pub enum Version {
     Proto2,
     Unknown,
 }
+
 
 #[derive(Debug)]
 /// Packed is used to encode the fact that the type should

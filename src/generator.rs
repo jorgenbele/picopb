@@ -35,8 +35,7 @@ fn field_to_rust_type(qualifier: &FieldQualifier, field_type: &FieldType) -> Str
             FieldType::Int64 => "i64".to_owned(),
             FieldType::Uint64 => "u64".to_owned(),
             FieldType::Uint32 => "u32".to_owned(),
-            FieldType::MessageType(s, _) => format!("{s}"),
-            FieldType::UnboundedMessageType(s) => format!("{s}"),
+            FieldType::MessageType(s) => format!("{s}"),
             FieldType::EnumType(s) => format!("{s}"),
         },
         (FieldQualifier::Optional, field_type) => match field_type {
@@ -49,8 +48,7 @@ fn field_to_rust_type(qualifier: &FieldQualifier, field_type: &FieldType) -> Str
             FieldType::Int64 => "Option<i64>".to_owned(),
             FieldType::Uint64 => "Option<u64>".to_owned(),
             FieldType::Uint32 => "Option<u32>".to_owned(),
-            FieldType::MessageType(s, _) => format!("Option<{s}>"),
-            FieldType::UnboundedMessageType(s) => format!("Option<{s}>"),
+            FieldType::MessageType(s) => format!("Option<{s}>"),
             FieldType::EnumType(s) => format!("Option<{s}>"),
         },
         (FieldQualifier::RepeatedUnbounded, field_type) => {
@@ -165,11 +163,11 @@ fn generate_message_metadata<T: Write>(to: &mut T, message_type: &MessageType) -
     // generate struct that holds fields metadata
 
     writeln!(to, "#[derive(Debug)]")?;
-    writeln!(to, "pub struct {}FieldsType {{", message_type.identifier)?;
+    writeln!(to, "pub struct {}FieldsType<'a> {{", message_type.identifier)?;
     for (_, field) in message_type.fields.iter() {
         writeln!(
             to,
-            "    pub {}: picopb::common::ConstMessageField,",
+            "    pub {}: picopb::common::ConstMessageField<'a>,",
             field.identifier
         )?;
     }
@@ -236,8 +234,7 @@ fn as_encodable_type(field: &MessageField, prefix: &str) -> String {
         FieldType::String(_) => format!("{wrapped}.as_slice()"),
         FieldType::Bytes(_) => format!("{wrapped}.as_bytes()"),
         FieldType::EnumType(_) => todo!(),
-        FieldType::MessageType(_, _) => todo!(),
-        FieldType::UnboundedMessageType(_) => todo!(),
+        FieldType::MessageType(_) => format!("(&{wrapped})"),
         FieldType::Bool
         | FieldType::Int32
         | FieldType::Int64
@@ -246,15 +243,28 @@ fn as_encodable_type(field: &MessageField, prefix: &str) -> String {
     }
 }
 
-fn generate_message_encode<T: Write>(to: &mut T, message_type: &MessageType) -> Result<()> {
+fn generate_message_wiretyped<T: Write>(to: &mut T, message_type: &MessageType) -> Result<()> {
     writeln!(
         to,
-        "impl picopb::encode::Encode for &{} {{",
+        "impl picopb::wiretypes::WireTyped for &{} {{",
+        message_type.identifier
+    )?;
+    writeln!(to, "    fn wiretype(&self) -> WireType {{")?;
+    writeln!(to, "        WireType::Len")?;
+    writeln!(to, "    }}")?;
+    writeln!(to, "}}")?;
+    Ok(())
+}
+
+fn generate_message_to_wire<T: Write>(to: &mut T, message_type: &MessageType) -> Result<()> {
+    writeln!(
+        to,
+        "impl picopb::encode::ToWire for &{} {{",
         message_type.identifier
     )?;
     writeln!(
         to,
-        "    fn encode(&self, buf: &mut picopb::encode::EncodeBuffer) -> std::io::Result<usize> {{"
+        "    fn append(&self, buf: &mut picopb::encode::EncodeBuffer) -> std::io::Result<usize> {{"
     )?;
     writeln!(to, "        let mut total_size = 0;")?;
     for (_, field) in message_type.fields.iter() {
@@ -273,7 +283,6 @@ fn generate_message_encode<T: Write>(to: &mut T, message_type: &MessageType) -> 
             }
             _ => {
                 let self_encodable_type = as_encodable_type(field, "self.");
-                dbg!(&self_encodable_type);
                 writeln!(to, "        total_size += buf.encode({self_encodable_type}, self.fields().{identifier}.ordinal)?;")?;
             }
         }
@@ -287,7 +296,6 @@ fn generate_message_encode<T: Write>(to: &mut T, message_type: &MessageType) -> 
         let encodable_type = as_encodable_type(field, "");
         let self_encodable_type = as_encodable_type(field, "self.");
         let identifier = &field.identifier;
-        dbg!(&self_encodable_type);
 
         // We don't want to encode empty optional values
         // and therefore should not count them towards the size
@@ -360,7 +368,8 @@ fn generate_messages<T: Write>(
         generate_message_metadata(to, message_type)?;
         // TODO: impl decoder
 
-        generate_message_encode(to, message_type)?;
+        generate_message_wiretyped(to, message_type)?;
+        generate_message_to_wire(to, message_type)?;
         generate_message_impl_randomize(to, message_type)?;
     }
     Ok(())
@@ -369,7 +378,7 @@ fn generate_messages<T: Write>(
 fn generate_imports<T: Write>(to: &mut T) -> std::io::Result<()> {
     writeln!(to, "use picopb::common::*;")?;
     writeln!(to, "use picopb::encode::ToWire;")?;
-    writeln!(to, "use picopb::encode::Encode;")?;
+    writeln!(to, "use picopb::wiretypes::{{WireType, WireTyped}};")?;
     writeln!(to, "use picopb::randomizer::{{randomized, Randomize}};")?;
     writeln!(to, "use std::ops::Deref;")
 }

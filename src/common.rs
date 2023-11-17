@@ -32,7 +32,7 @@ impl<'a> FieldType<'a> {
             // if we don't recognize the type we assume it is a Message type
             // this will be verified later
             (s, None) => Self::MessageType(s),
-            (_, Some(_)) => unreachable!(),
+            (s, Some(_)) => Self::MessageType(s),
         }
     }
 

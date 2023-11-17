@@ -1,4 +1,3 @@
-
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 pub struct MessageWithOptionalField {
@@ -47,7 +46,6 @@ impl picopb::encode::Encode for &MessageWithOptionalField {
         total_size
     }
 }
-
 
 use std::io::Write;
 fn main() {

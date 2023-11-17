@@ -1,6 +1,5 @@
 use crate::common::{Field, Packed};
 
-
 /// This file contains the predefine wiretypes for the types where this is applicable
 /// TODO: ZigZag encoding of signed types
 pub struct WireTypeId(pub u32);

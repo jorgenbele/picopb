@@ -101,15 +101,12 @@ pub enum FieldOption {
     Packed(bool),
 }
 
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct FieldOptions {
     pub max_size: Option<usize>,
     pub max_len: Option<usize>,
     pub packed: bool,
 }
-
-
 
 impl FieldQualifier {
     pub fn from_str(s: &str, options: &FieldOptions) -> Self {

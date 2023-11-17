@@ -1,11 +1,7 @@
 use clap::Parser;
 use std::fs::read_to_string;
 // use pest::Parser;
-use picopb::{
-    generator::generate,
-    parser::parse,
-    validator::validate,
-};
+use picopb::{generator::generate, parser::parse, validator::validate};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -34,7 +30,7 @@ fn main() {
         validate(&result).expect("failed to validate input");
     }
     if args.generate {
-        generate(&result).expect("failed to generate");
+        generate(&mut std::io::stdout(), &result).expect("failed to generate");
     }
 
     // let example_field = "required string name = 2;";

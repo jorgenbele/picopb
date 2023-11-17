@@ -1,6 +1,3 @@
-
-
-
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 pub enum Error {
@@ -66,7 +63,6 @@ impl picopb::encode::Encode for &Query {
         total_size
     }
 }
-
 
 use std::io::Write;
 fn main() {

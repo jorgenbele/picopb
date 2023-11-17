@@ -1,4 +1,3 @@
-
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 use std::ops::Deref;

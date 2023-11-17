@@ -1,4 +1,3 @@
-
 use picopb::encode::Encode;
 use picopb::encode::ToWire;
 use picopb::randomizer::{randomized, Randomize};
@@ -70,8 +69,6 @@ impl Randomize<MessageWithOptionalField> for MessageWithOptionalField {
         }
     }
 }
-
-
 
 use std::io::Write;
 fn main() {

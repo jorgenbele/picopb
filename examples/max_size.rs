@@ -13,5 +13,5 @@ fn main() {
     let result = result.unwrap();
     dbg!(&result);
     validate(&result).unwrap();
-    generate(&result).unwrap();
+    generate(&mut std::io::stdout(), &result).unwrap();
 }

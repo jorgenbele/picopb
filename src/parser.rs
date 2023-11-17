@@ -5,7 +5,6 @@ use std::{
     hash::Hash,
 };
 
-
 use pest::{
     error::Error as PestError, iterators::Pair as PestPair, iterators::Pairs as PestPairs, Parser,
     Span,
@@ -84,8 +83,8 @@ pub struct ProtoParser {
     pub message_types: HashMap<String, MessageType>,
 }
 
-type ParseResult = Result<ProtoParser, ParserError>;
-type EmptyParseResult = Result<(), ParserError>;
+pub type ParseResult = Result<ProtoParser, ParserError>;
+pub type EmptyParseResult = Result<(), ParserError>;
 
 impl ProtoParser {
     fn usize_from_str(span: Span<'_>, s: &str) -> Result<usize, ParserError> {
@@ -165,13 +164,11 @@ impl ProtoParser {
                 variant_span,
                 number_value.as_str(),
             )?)),
-            _ => {
-                Err(ParserError::ExpectedButGot(
-                    variant_span.into(),
-                    "max_size_option or max_len_option".into(),
-                    "ERR".into(),
-                ))
-            }
+            _ => Err(ParserError::ExpectedButGot(
+                variant_span.into(),
+                "max_size_option or max_len_option".into(),
+                "ERR".into(),
+            )),
         }
     }
 
@@ -266,21 +263,12 @@ impl ProtoParser {
                 Rule::message_field => {
                     let mut message_inner = value.into_inner();
 
-                    let qualifier = self.expect_next_rule(
-                        value_span,
-                        &mut message_inner,
-                        Rule::qualifier,
-                    )?;
-                    let field_type = self.expect_next_rule(
-                        value_span,
-                        &mut message_inner,
-                        Rule::field_type,
-                    )?;
-                    let identifier = self.expect_next_rule(
-                        value_span,
-                        &mut message_inner,
-                        Rule::identifier,
-                    )?;
+                    let qualifier =
+                        self.expect_next_rule(value_span, &mut message_inner, Rule::qualifier)?;
+                    let field_type =
+                        self.expect_next_rule(value_span, &mut message_inner, Rule::field_type)?;
+                    let identifier =
+                        self.expect_next_rule(value_span, &mut message_inner, Rule::identifier)?;
                     let field_number =
                         self.expect_next_rule(value_span, &mut message_inner, Rule::number)?;
 
@@ -360,11 +348,8 @@ impl ProtoParser {
                 Rule::enum_field => {
                     let mut enum_inner = value.into_inner();
 
-                    let identifier = self.expect_next_rule(
-                        value_span,
-                        &mut enum_inner,
-                        Rule::identifier,
-                    )?;
+                    let identifier =
+                        self.expect_next_rule(value_span, &mut enum_inner, Rule::identifier)?;
                     let number =
                         self.expect_next_rule(value_span, &mut enum_inner, Rule::number)?;
 
